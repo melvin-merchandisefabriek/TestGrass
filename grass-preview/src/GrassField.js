@@ -99,6 +99,38 @@ function CustomSlider({ label, value, setValue, min, max, step = 1, description 
 }
 
 export default function GrassField(props) {
+  // Inject global style to prevent all scrolling and overflow
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      html, body, #root {
+        width: 100vw !important;
+        height: 100vh !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+      }
+      body > * {
+        box-sizing: border-box !important;
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
+
+  // Responsive width/height for SVG and drawing
+  const [viewport, setViewport] = React.useState({ width: window.innerWidth, height: window.innerHeight });
+  React.useEffect(() => {
+    function handleResize() {
+      setViewport({ width: window.innerWidth, height: window.innerHeight });
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const width = viewport.width;
+  const height = viewport.height;
+
   // State for adjustable parameters
   const [minHeight, setMinHeight] = React.useState(GRASS_MIN_HEIGHT);
   const [maxHeight, setMaxHeight] = React.useState(GRASS_MAX_HEIGHT);
@@ -125,8 +157,6 @@ export default function GrassField(props) {
   const [treeMinBranchWidth, setTreeMinBranchWidth] = React.useState(1.2);
   const [treeBranchesPerNode, setTreeBranchesPerNode] = React.useState(3);
 
-  const width = props.width || 500;
-  const height = props.height || 500;
   const [tick, setTick] = React.useState(0);
   const lastTimeRef = React.useRef();
   React.useEffect(() => {
@@ -250,10 +280,10 @@ export default function GrassField(props) {
     if (values.treeBranchesPerNode !== undefined) setTreeBranchesPerNode(values.treeBranchesPerNode);
   }
 
-  // Calculate the maximum allowed blade length for the current field size
-  const baseY = height - baseYOffset;
-  const maxAllowedLen = Math.max(baseY - 5, 0); // 5px margin from top, never negative
-  // Clamp minHeight and maxHeight to maxAllowedLen
+  // Calculate the base Y for grass and tree: always at the top of the ground
+  const baseYField = height - groundHeight;
+  // Clamp minHeight and maxHeight to not exceed the available space above the ground
+  const maxAllowedLen = Math.max(baseYField - 5, 0); // 5px margin from top, never negative
   const clampedMinHeight = Math.min(minHeight, maxAllowedLen);
   const clampedMaxHeight = Math.min(maxHeight, maxAllowedLen);
 
@@ -263,13 +293,13 @@ export default function GrassField(props) {
   const steps = Math.max(80, Math.floor(width / 4));
   for (let i = 0; i <= steps; i++) {
     const x = (i / steps) * width;
-    const y =
-      groundYBase +
+    // Compound sinewaves for terrain, but always start at groundYBase and never go below groundYBase
+    const y = groundYBase +
       Math.sin((x / width) * Math.PI * 2) * 7 +
       Math.sin((x / width) * Math.PI * 4) * 4 +
       Math.sin((x / width) * Math.PI * 1.2) * 5 +
       Math.sin((x / width) * Math.PI * 0.5 + 1.5) * 3;
-    groundPoints.push([x, y]);
+    groundPoints.push([x, Math.min(y, groundYBase)]); // Clamp to top of ground
   }
 
   // Helper to get ground Y at any X by linear interpolation
@@ -287,7 +317,7 @@ export default function GrassField(props) {
   const blades = [];
   for (let i = 0; i < bladeCount; i++) {
     const baseX = lerp(30, width - 30, i / (bladeCount - 1));
-    const baseY = getGroundY(baseX);
+    const baseY = getGroundY(baseX); // This will be at the top of the ground
     // Use clamped heights for bladeLen
     let unclampedLen = lerp(clampedMinHeight, clampedMaxHeight, pseudoRandom(i));
     const maxAllowedLen = baseY - 5; // 5px margin from top
@@ -304,7 +334,10 @@ export default function GrassField(props) {
     // Wind push vector (direction * intensity * strength)
     const windPushX = Math.cos(windAngle) * windIntensity * windStrength;
     const windPushY = Math.sin(windAngle) * windIntensity * windStrength;
-    // Calculate tip position (before clamping)
+    // Calculate no-wind tip position
+    const tipX_noWind = baseX + lerp(-8, 8, pseudoRandom(i + 400));
+    const tipY_noWind = baseY - bladeLen + lerp(-8, 8, pseudoRandom(i + 500));
+    // Calculate tip position (with wind, before clamping)
     let tipX = baseX + windPushX + lerp(-8, 8, pseudoRandom(i + 400));
     let tipY = baseY - bladeLen + windPushY + lerp(-8, 8, pseudoRandom(i + 500));
     // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
@@ -316,29 +349,28 @@ export default function GrassField(props) {
       tipX = baseX + dx * scale;
       tipY = baseY + dy * scale;
     }
-    // Control point: blend between default curve and wind-only position
+    // Control point: always interpolate between no-wind and wind-bent positions
     const ctrlWindFrac = ctrlWindEffect / 100;
     const ctrlFrac = ctrlHeightFrac;
-    const baseToTipX = tipX - baseX;
-    const baseToTipY = tipY - baseY;
-    const ctrlBaseX = baseX + baseToTipX * ctrlFrac;
-    const ctrlBaseY = baseY + baseToTipY * ctrlFrac;
-    // Perpendicular vector (for curve direction)
-    const perpX = -baseToTipY;
-    const perpY = baseToTipX;
-    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
-    const perpNormX = perpX / perpLen;
-    const perpNormY = perpY / perpLen;
-    // Default curve control point (no wind)
+    // No-wind control point (project along no-wind base-to-tip vector, add curve)
+    const baseToTipX_noWind = tipX_noWind - baseX;
+    const baseToTipY_noWind = tipY_noWind - baseY;
+    const ctrlBaseX_noWind = baseX + baseToTipX_noWind * ctrlFrac;
+    const ctrlBaseY_noWind = baseY + baseToTipY_noWind * ctrlFrac;
+    const perpX_noWind = -baseToTipY_noWind;
+    const perpY_noWind = baseToTipX_noWind;
+    const perpLen_noWind = Math.sqrt(perpX_noWind * perpX_noWind + perpY_noWind * perpY_noWind) || 1;
+    const perpNormX_noWind = perpX_noWind / perpLen_noWind;
+    const perpNormY_noWind = perpY_noWind / perpLen_noWind;
     const curveMag = bladeLen * curveAmount * lerp(-1, 1, pseudoRandom(i + 200));
-    const ctrlCurveX = ctrlBaseX + perpNormX * curveMag;
-    const ctrlCurveY = ctrlBaseY + perpNormY * curveMag;
-    // Wind-only control point (no curve, just wind)
-    const ctrlWindPushX = windPushX * 0.18;
-    const ctrlWindPushY = windPushY * 0.12;
-    const ctrlWindX = ctrlBaseX + ctrlWindPushX;
-    const ctrlWindY = ctrlBaseY + ctrlWindPushY;
-    // Interpolate between default curve and wind-only
+    const ctrlCurveX = ctrlBaseX_noWind + perpNormX_noWind * curveMag;
+    const ctrlCurveY = ctrlBaseY_noWind + perpNormY_noWind * curveMag;
+    // Wind-bent control point (project along wind-bent base-to-tip vector, no curve)
+    const baseToTipX_wind = tipX - baseX;
+    const baseToTipY_wind = tipY - baseY;
+    const ctrlWindX = baseX + baseToTipX_wind * ctrlFrac;
+    const ctrlWindY = baseY + baseToTipY_wind * ctrlFrac;
+    // Interpolate between no-wind curve and wind-bent (no curve)
     let ctrlX = lerp(ctrlCurveX, ctrlWindX, ctrlWindFrac);
     let ctrlY = lerp(ctrlCurveY, ctrlWindY, ctrlWindFrac);
     // Clamp ctrlY to not go below baseY
@@ -378,202 +410,203 @@ export default function GrassField(props) {
   const [showSettings, setShowSettings] = React.useState(false);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden', position: 'relative', background: FIELD_BG_GRADIENT }}>
-      {/* Buttons above display */}
-      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, display: 'flex', gap: 10 }}>
-        <button onClick={saveAsDefault} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Save as Default</button>
-        <button onClick={() => setShowPresetDialog(v => !v)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#f8fff8', fontWeight: 600}}>
-          {showPresetDialog ? 'Hide Presets' : 'Show Presets'}
-        </button>
-        <button onClick={() => setShowSettings(true)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Settings</button>
-      </div>
-      {/* Preset dialog (floating, top left) */}
-      {showPresetDialog && (
-        <div style={{position: 'absolute', top: 44, left: 10, zIndex: 20, border: '1px solid #bbb', borderRadius: 8, padding: 12, background: '#f8fff8', minWidth: 220, maxWidth: 320}}>
-          <div style={{fontWeight: 600, marginBottom: 6}}>Presets</div>
-          <div style={{marginBottom: 8}}>
-            <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="Preset name" style={{width: '70%', marginRight: 4}} />
-            <button onClick={savePreset} style={{fontSize: 13}}>Save</button>
+    <svg
+      id="grass-svg"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      style={{
+        display: 'block', position: 'fixed', top: 0, left: 0,
+        background: FIELD_BG_GRADIENT,
+        borderRadius: borderRadius,
+        overflow: 'hidden',
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        zIndex: 0,
+      }}
+    >
+      {/* Blue border for viewport test */}
+      <rect x="0" y="0" width={width} height={height} fill="none" stroke="blue" strokeWidth="3" />
+      {/* UI overlays inside SVG, clipped by border */}
+      <foreignObject x="0" y="0" width={width} height={height} style={{pointerEvents: 'none'}}>
+        {/* Overlay container: flex column, no absolute positioning */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, margin: 10, pointerEvents: 'none', width: 'auto', maxWidth: '100%' }}>
+          {/* Buttons above display */}
+          <div style={{ display: 'flex', gap: 10, pointerEvents: 'auto', width: 'auto', maxWidth: '100%' }}>
+            <button onClick={saveAsDefault} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Save as Default</button>
+            <button onClick={() => setShowPresetDialog(v => !v)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#f8fff8', fontWeight: 600}}>
+              {showPresetDialog ? 'Hide Presets' : 'Show Presets'}
+            </button>
+            <button onClick={() => setShowSettings(true)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Settings</button>
           </div>
-          {presets.length === 0 && <div style={{fontSize: 13, color: '#888'}}>No presets saved.</div>}
-          {presets.map(p => (
-            <div key={p.name} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
-              <button onClick={() => loadPreset(p.values)} style={{marginRight: 8, fontSize: 13}}>{p.name}</button>
-              <button onClick={() => {
-                const filtered = presets.filter(pr => pr.name !== p.name);
-                setPresets(filtered);
-                localStorage.setItem('grassPresets', JSON.stringify(filtered));
-              }} style={{fontSize: 13, color: '#a00'}}>Delete</button>
+          {/* Preset dialog (floating, below buttons) */}
+          {showPresetDialog && (
+            <div style={{border: '1px solid #bbb', borderRadius: 8, padding: 12, background: '#f8fff8', minWidth: 220, maxWidth: 320, maxHeight: '60vh', overflowY: 'auto', boxSizing: 'border-box', pointerEvents: 'auto'}}>
+              <div style={{fontWeight: 600, marginBottom: 6}}>Presets</div>
+              <div style={{marginBottom: 8}}>
+                <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="Preset name" style={{width: '70%', marginRight: 4}} />
+                <button onClick={savePreset} style={{fontSize: 13}}>Save</button>
+              </div>
+              {presets.length === 0 && <div style={{fontSize: 13, color: '#888'}}>No presets saved.</div>}
+              {presets.map(p => (
+                <div key={p.name} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
+                  <button onClick={() => loadPreset(p.values)} style={{marginRight: 8, fontSize: 13}}>{p.name}</button>
+                  <button onClick={() => {
+                    const filtered = presets.filter(pr => pr.name !== p.name);
+                    setPresets(filtered);
+                    localStorage.setItem('grassPresets', JSON.stringify(filtered));
+                  }} style={{fontSize: 13, color: '#a00'}}>Delete</button>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
+          {/* Settings dialog: full height, left side overlay, but no absolute/fixed */}
+          {showSettings && (
+            <div style={{
+              background: '#fff', border: '1px solid #bbb', borderRadius: 8, boxShadow: '2px 0 16px #0002', display: 'flex', flexDirection: 'column',
+              maxHeight: '80vh', overflow: 'hidden', boxSizing: 'border-box', pointerEvents: 'auto', minWidth: 320, width: 340
+            }}>
+              <div style={{
+                position: 'sticky', top: 0, zIndex: 2, background: '#e8fbe8', borderBottom: '1px solid #bbb',
+                padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                minHeight: 0
+              }}>
+                <span style={{fontWeight: 700, fontSize: 15}}>Settings</span>
+                <button onClick={() => setShowSettings(false)} style={{fontWeight: 600, background: '#e8fbe8', border: '1px solid #bbb', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontSize: 13}}>Close</button>
+              </div>
+              <div style={{padding: '10px 12px', fontSize: 12, flex: 1, minHeight: 0, overflowY: 'auto', maxHeight: 'calc(80vh - 48px)'}}>
+                <FoldoutSection title="Grass Field" defaultOpen>
+                  <CustomSlider label="Blade Count" value={bladeCount} setValue={v => setBladeCount(Number(v))} min={10} max={300} step={1} description="Number of grass blades in the field" small />
+                  <CustomSlider label="Min Height" value={clampedMinHeight} setValue={setMinHeight} min={5} max={maxAllowedLen} step={1} description="Minimum possible blade height (pixels)." small />
+                  <CustomSlider label="Max Height" value={clampedMaxHeight} setValue={setMaxHeight} min={clampedMinHeight} max={maxAllowedLen} step={1} description="Maximum possible blade height (pixels)." small />
+                  <CustomSlider label="Min Curve" value={minCurve} setValue={setMinCurve} min={0} max={100} step={1} description="Minimum curve (bend) of blades." small />
+                  <CustomSlider label="Max Curve" value={maxCurve} setValue={setMaxCurve} min={0} max={120} step={1} description="Maximum curve (bend) of blades." small />
+                  <CustomSlider label="Blade Width" value={bladeWidth} setValue={setBladeWidth} min={1} max={12} step={1} description="Thickness of each blade." small />
+                  <CustomSlider label="Base Width" value={baseWidthMultiplier} setValue={setBaseWidthMultiplier} min={1} max={6} step={0.01} description="Multiplier for the base thickness of each blade" small />
+                  <CustomSlider label="Base Y Offset" value={baseYOffset} setValue={setBaseYOffset} min={0} max={100} step={1} description="Vertical offset of grass base from the bottom." small />
+                  <CustomSlider label="Ground Height" value={groundHeight} setValue={setGroundHeight} min={10} max={100} step={1} description="Height of the ground area." small />
+                  <CustomSlider label="Border Radius" value={borderRadius} setValue={setBorderRadius} min={0} max={40} step={1} description="Corner roundness of the field." small />
+                </FoldoutSection>
+                <FoldoutSection title="Wind">
+                  <CustomSlider label="Wind Angle" value={Math.round(windAngle * 180 / Math.PI)} setValue={v => setWindAngle(Number(v) * Math.PI / 180)} min={0} max={360} step={1} description="Direction of wind (degrees, 0 = right, 90 = down)" small />
+                  <CustomSlider label="Wind Speed" value={windSpeed} setValue={setWindSpeed} min={0.01} max={0.25} step={0.01} description="Speed of wind field movement" small />
+                  <CustomSlider label="Wind Strength" value={windStrength} setValue={setWindStrength} min={0} max={60} step={1} description="How much the wind bends the grass tips" small />
+                  <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind moves the blade's middle (0% = none, 100% = same as tip)" small />
+                </FoldoutSection>
+                <FoldoutSection title="Blade Shape">
+                  <CustomSlider label="Ctrl Min Height" value={ctrlMinHeight} setValue={setCtrlMinHeight} min={0.3} max={0.9} step={0.01} description="Lowest possible control point (as a fraction of blade height)." small />
+                  <CustomSlider label="Ctrl Max Height" value={ctrlMaxHeight} setValue={setCtrlMaxHeight} min={0.4} max={1.0} step={0.01} description="Highest possible control point (as a fraction of blade height)." small />
+                  <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind affects the middle control point (0% = none, 100% = same as tip)" small />
+                </FoldoutSection>
+                <FoldoutSection title="Tree">
+                  <CustomSlider label="Tree X Position" value={Math.round(treeBaseX * 100)} setValue={v => setTreeBaseX(Number(v) / 100)} min={0} max={100} step={1} description="Horizontal position of tree (percent of width)" small />
+                  <CustomSlider label="Trunk Height" value={trunkHeight} setValue={setTrunkHeight} min={40} max={400} step={1} description="Height of the main trunk" small />
+                  <CustomSlider label="Trunk Width" value={trunkWidth} setValue={setTrunkWidth} min={4} max={60} step={0.1} description="Thickness of the main trunk" small />
+                  <CustomSlider label="Branch Levels" value={treeLevels} setValue={setTreeLevels} min={1} max={10} step={1} description="How many times branches can rebranch" small />
+                  <CustomSlider label="Branches per Node" value={treeBranchesPerNode} setValue={setTreeBranchesPerNode} min={2} max={6} step={1} description="How many branches split at each node" small />
+                  <CustomSlider label="Branch Spread" value={Math.round(treeBranchSpread * 180 / Math.PI)} setValue={v => setTreeBranchSpread(Number(v) * Math.PI / 180)} min={10} max={180} step={1} description="Spread angle of branches (degrees)" small />
+                  <CustomSlider label="Branch Scale" value={treeBranchScale} setValue={setTreeBranchScale} min={0.3} max={0.9} step={0.01} description="Relative length of each branch compared to its parent" small />
+                  <CustomSlider label="Min Branch Width" value={treeMinBranchWidth} setValue={setTreeMinBranchWidth} min={0.5} max={10} step={0.1} description="Minimum width for branches (thinner = more detail)" small />
+                </FoldoutSection>
+              </div>
+            </div>
+          )}
         </div>
-      )}
-      {/* Settings dialog: full height, left side overlay */}
-      {showSettings && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, height: '100vh', width: 340, background: '#fff', zIndex: 1000,
-          boxShadow: '2px 0 16px #0002', borderRight: '1px solid #bbb', display: 'flex', flexDirection: 'column',
-        }}>
-          <div style={{
-            position: 'sticky', top: 0, zIndex: 2, background: '#e8fbe8', borderBottom: '1px solid #bbb',
-            padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            minHeight: 0
-          }}>
-            <span style={{fontWeight: 700, fontSize: 15}}>Settings</span>
-            <button onClick={() => setShowSettings(false)} style={{fontWeight: 600, background: '#e8fbe8', border: '1px solid #bbb', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontSize: 13}}>Close</button>
-          </div>
-          <div style={{padding: '10px 12px', fontSize: 12, flex: 1, minHeight: 0, overflowY: 'auto'}}>
-            <FoldoutSection title="Grass Field" defaultOpen>
-              <CustomSlider label="Blade Count" value={bladeCount} setValue={v => setBladeCount(Number(v))} min={10} max={300} step={1} description="Number of grass blades in the field" small />
-              <CustomSlider label="Min Height" value={clampedMinHeight} setValue={setMinHeight} min={5} max={maxAllowedLen} step={1} description="Minimum possible blade height (pixels)." small />
-              <CustomSlider label="Max Height" value={clampedMaxHeight} setValue={setMaxHeight} min={clampedMinHeight} max={maxAllowedLen} step={1} description="Maximum possible blade height (pixels)." small />
-              <CustomSlider label="Min Curve" value={minCurve} setValue={setMinCurve} min={0} max={100} step={1} description="Minimum curve (bend) of blades." small />
-              <CustomSlider label="Max Curve" value={maxCurve} setValue={setMaxCurve} min={0} max={120} step={1} description="Maximum curve (bend) of blades." small />
-              <CustomSlider label="Blade Width" value={bladeWidth} setValue={setBladeWidth} min={1} max={12} step={1} description="Thickness of each blade." small />
-              <CustomSlider label="Base Width" value={baseWidthMultiplier} setValue={setBaseWidthMultiplier} min={1} max={6} step={0.01} description="Multiplier for the base thickness of each blade" small />
-              <CustomSlider label="Base Y Offset" value={baseYOffset} setValue={setBaseYOffset} min={0} max={100} step={1} description="Vertical offset of grass base from the bottom." small />
-              <CustomSlider label="Ground Height" value={groundHeight} setValue={setGroundHeight} min={10} max={100} step={1} description="Height of the ground area." small />
-              <CustomSlider label="Border Radius" value={borderRadius} setValue={setBorderRadius} min={0} max={40} step={1} description="Corner roundness of the field." small />
-            </FoldoutSection>
-            <FoldoutSection title="Wind">
-              <CustomSlider label="Wind Angle" value={Math.round(windAngle * 180 / Math.PI)} setValue={v => setWindAngle(Number(v) * Math.PI / 180)} min={0} max={360} step={1} description="Direction of wind (degrees, 0 = right, 90 = down)" small />
-              <CustomSlider label="Wind Speed" value={windSpeed} setValue={setWindSpeed} min={0.01} max={0.25} step={0.01} description="Speed of wind field movement" small />
-              <CustomSlider label="Wind Strength" value={windStrength} setValue={setWindStrength} min={0} max={60} step={1} description="How much the wind bends the grass tips" small />
-              <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind moves the blade's middle (0% = none, 100% = same as tip)" small />
-            </FoldoutSection>
-            <FoldoutSection title="Blade Shape">
-              <CustomSlider label="Ctrl Min Height" value={ctrlMinHeight} setValue={setCtrlMinHeight} min={0.3} max={0.9} step={0.01} description="Lowest possible control point (as a fraction of blade height)." small />
-              <CustomSlider label="Ctrl Max Height" value={ctrlMaxHeight} setValue={setCtrlMaxHeight} min={0.4} max={1.0} step={0.01} description="Highest possible control point (as a fraction of blade height)." small />
-              <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind affects the middle control point (0% = none, 100% = same as tip)" small />
-            </FoldoutSection>
-            <FoldoutSection title="Tree">
-              <CustomSlider label="Tree X Position" value={Math.round(treeBaseX * 100)} setValue={v => setTreeBaseX(Number(v) / 100)} min={0} max={100} step={1} description="Horizontal position of tree (percent of width)" small />
-              <CustomSlider label="Trunk Height" value={trunkHeight} setValue={setTrunkHeight} min={40} max={400} step={1} description="Height of the main trunk" small />
-              <CustomSlider label="Trunk Width" value={trunkWidth} setValue={setTrunkWidth} min={4} max={60} step={0.1} description="Thickness of the main trunk" small />
-              <CustomSlider label="Branch Levels" value={treeLevels} setValue={setTreeLevels} min={1} max={10} step={1} description="How many times branches can rebranch" small />
-              <CustomSlider label="Branches per Node" value={treeBranchesPerNode} setValue={setTreeBranchesPerNode} min={2} max={6} step={1} description="How many branches split at each node" small />
-              <CustomSlider label="Branch Spread" value={Math.round(treeBranchSpread * 180 / Math.PI)} setValue={v => setTreeBranchSpread(Number(v) * Math.PI / 180)} min={10} max={180} step={1} description="Spread angle of branches (degrees)" small />
-              <CustomSlider label="Branch Scale" value={treeBranchScale} setValue={setTreeBranchScale} min={0.3} max={0.9} step={0.01} description="Relative length of each branch compared to its parent" small />
-              <CustomSlider label="Min Branch Width" value={treeMinBranchWidth} setValue={setTreeMinBranchWidth} min={0.5} max={10} step={0.1} description="Minimum width for branches (thinner = more detail)" small />
-            </FoldoutSection>
-          </div>
-        </div>
-      )}
-      {/* SVG fills the whole screen */}
-      <svg
-        id="grass-svg"
-        width="100vw"
-        height="100vh"
-        viewBox={`0 0 ${width} ${height}`}
-        style={{
-          width: '100vw', height: '100vh', display: 'block', position: 'absolute', top: 0, left: 0,
-          background: FIELD_BG_GRADIENT,
-          borderRadius: borderRadius,
-        }}
-      >
-        {/* Ground - wavy terrain */}
-        {(() => {
-          // Compound sinewaves for terrain (static, not animated)
-          const points = [];
-          const groundYBase = height - groundHeight;
-          const steps = Math.max(80, Math.floor(width / 4));
-          for (let i = 0; i <= steps; i++) {
-            const x = (i / steps) * width;
-            // Compound sinewaves (static, no tick)
-            const y =
-              groundYBase +
-              Math.sin((x / width) * Math.PI * 2) * 7 +
-              Math.sin((x / width) * Math.PI * 4) * 4 +
-              Math.sin((x / width) * Math.PI * 1.2) * 5 +
-              Math.sin((x / width) * Math.PI * 0.5 + 1.5) * 3;
-            points.push([x, y]);
-          }
-          // SVG path: start at left, follow points, then close at bottom
-          let path = `M 0 ${height} L ${points[0][0]} ${points[0][1]}`;
-          for (let i = 1; i < points.length; i++) {
-            path += ` L ${points[i][0]} ${points[i][1]}`;
-          }
-          path += ` L ${width} ${height} Z`;
-          return (
+      </foreignObject>
+      {/* Ground - wavy terrain */}
+      {(() => {
+        // Compound sinewaves for terrain (static, not animated)
+        const points = [];
+        for (let i = 0; i <= steps; i++) {
+          const x = (i / steps) * width;
+          const y = groundPoints[i][1];
+          points.push([x, y]);
+        }
+        // SVG path: start at left bottom, up to ground, then right bottom
+        let path = `M 0 ${height} L ${points[0][0]} ${points[0][1]}`;
+        for (let i = 1; i < points.length; i++) {
+          path += ` L ${points[i][0]} ${points[i][1]}`;
+        }
+        path += ` L ${width} ${height} Z`;
+        return (
+          <path
+            d={path}
+            fill="#4b8b3b"
+            stroke="#39702a"
+            strokeWidth={2}
+            style={{ filter: 'drop-shadow(0 2px 6px #2a4d1a44)' }}
+          />
+        );
+      })()}
+      {/* Tree - recursive trunk and branches */}
+      {(() => {
+        // Tree parameters (from state)
+        const baseX = width * treeBaseX;
+        const baseY = getGroundY(baseX);
+        // Recursive function to draw branches (deterministic randomness)
+        function drawBranch(x, y, angle, length, width, level, branchSeed = 0) {
+          if (level > treeLevels || width < treeMinBranchWidth) return [];
+          // End point of this branch
+          const endX = x + Math.cos(angle) * length;
+          const endY = y - Math.sin(angle) * length;
+          // Control point for the curve
+          const ctrlX = x + Math.cos(angle) * length * 0.5 + Math.cos(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
+          const ctrlY = y - Math.sin(angle) * length * 0.5 - Math.sin(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
+          // Triangle-like path (like a thick grass blade)
+          const halfWidth = width / 2;
+          // Base left/right
+          const baseLeftX = x - halfWidth;
+          const baseLeftY = y;
+          const baseRightX = x + halfWidth;
+          const baseRightY = y;
+          // Control left/right (for thickness at curve)
+          const ctrlPerpAngle = angle + Math.PI / 2;
+          const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
+          const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
+          const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
+          const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
+          // Tip (single point)
+          const tipX = endX;
+          const tipY = endY;
+          // Path for filled branch (triangle-like)
+          const branchPath = `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
+          const color = '#7a4a1a';
+          const path = (
             <path
-              d={path}
-              fill="#4b8b3b"
-              stroke="#39702a"
-              strokeWidth={2}
-              style={{ filter: 'drop-shadow(0 2px 6px #2a4d1a44)' }}
+              key={`branch-${x}-${y}-${level}`}
+              d={branchPath}
+              fill={color}
+              stroke={color}
+              strokeWidth={1.2}
+              opacity={0.97}
             />
           );
-        })()}
-        {/* Tree - recursive trunk and branches */}
-        {(() => {
-          // Tree parameters (from state)
-          const baseX = width * treeBaseX;
-          const baseY = getGroundY(baseX);
-          // Recursive function to draw branches (deterministic randomness)
-          function drawBranch(x, y, angle, length, width, level, branchSeed = 0) {
-            if (level > treeLevels || width < treeMinBranchWidth) return [];
-            // End point of this branch
-            const endX = x + Math.cos(angle) * length;
-            const endY = y - Math.sin(angle) * length;
-            // Control point for the curve
-            const ctrlX = x + Math.cos(angle) * length * 0.5 + Math.cos(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
-            const ctrlY = y - Math.sin(angle) * length * 0.5 - Math.sin(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
-            // Triangle-like path (like a thick grass blade)
-            const halfWidth = width / 2;
-            // Base left/right
-            const baseLeftX = x - halfWidth;
-            const baseLeftY = y;
-            const baseRightX = x + halfWidth;
-            const baseRightY = y;
-            // Control left/right (for thickness at curve)
-            const ctrlPerpAngle = angle + Math.PI / 2;
-            const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
-            const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
-            const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
-            const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
-            // Tip (single point)
-            const tipX = endX;
-            const tipY = endY;
-            // Path for filled branch (triangle-like)
-            const branchPath = `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
-            const color = '#7a4a1a';
-            const path = (
-              <path
-                key={`branch-${x}-${y}-${level}`}
-                d={branchPath}
-                fill={color}
-                stroke={color}
-                strokeWidth={1.2}
-                opacity={0.97}
-              />
-            );
-            // Branching
-            let children = [];
-            if (level < treeLevels) {
-              const nBranches = treeBranchesPerNode + (level === 0 ? 1 : 0); // Trunk can split into more
-              for (let i = 0; i < nBranches; i++) {
-                const t = nBranches === 1 ? 0.5 : i / (nBranches - 1);
-                const spread = treeBranchSpread * (1 - level / (treeLevels + 1));
-                // Use deterministic pseudoRandom for all randomness
-                const randBase = branchSeed * 100 + i + level * 1000;
-                const branchAng = angle - spread / 2 + t * spread + (pseudoRandom(randBase + 1) - 0.5) * 0.08;
-                const branchLen = length * treeBranchScale * lerp(0.85, 1.1, pseudoRandom(randBase + 2));
-                const branchW = width * lerp(0.5, 0.7, pseudoRandom(randBase + 3));
-                // Branches start at 60-80% up the parent branch
-                const bx = lerp(x, endX, lerp(0.6, 0.8, pseudoRandom(randBase + 4)));
-                const by = lerp(y, endY, lerp(0.6, 0.8, pseudoRandom(randBase + 5)));
-                children = children.concat(drawBranch(bx, by, branchAng, branchLen, branchW, level + 1, randBase));
-              }
+          // Branching
+          let children = [];
+          if (level < treeLevels) {
+            const nBranches = treeBranchesPerNode + (level === 0 ? 1 : 0); // Trunk can split into more
+            for (let i = 0; i < nBranches; i++) {
+              const t = nBranches === 1 ? 0.5 : i / (nBranches - 1);
+              const spread = treeBranchSpread * (1 - level / (treeLevels + 1));
+              // Use deterministic pseudoRandom for all randomness
+              const randBase = branchSeed * 100 + i + level * 1000;
+              const branchAng = angle - spread / 2 + t * spread + (pseudoRandom(randBase + 1) - 0.5) * 0.08;
+              const branchLen = length * treeBranchScale * lerp(0.85, 1.1, pseudoRandom(randBase + 2));
+              const branchW = width * lerp(0.5, 0.7, pseudoRandom(randBase + 3));
+              // Branches start at 60-80% up the parent branch
+              const bx = lerp(x, endX, lerp(0.6, 0.8, pseudoRandom(randBase + 4)));
+              const by = lerp(y, endY, lerp(0.6, 0.8, pseudoRandom(randBase + 5)));
+              children = children.concat(drawBranch(bx, by, branchAng, branchLen, branchW, level + 1, randBase));
             }
-            return [path, ...children];
           }
+          return [path, ...children];
+        }
 
-          // Draw the main trunk and all branches
-          return drawBranch(baseX, baseY, Math.PI / 2, trunkHeight, trunkWidth, 0, 0);
-        })()}
-        {/* Grass blades */}
-        {blades}
-      </svg>
-    </div>
+        // Draw the main trunk and all branches
+        return drawBranch(baseX, baseY, Math.PI / 2, trunkHeight, trunkWidth, 0, 0);
+      })()}
+      {/* Grass blades */}
+      {blades}
+    </svg>
   );
 }
