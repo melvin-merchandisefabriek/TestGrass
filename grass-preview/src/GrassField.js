@@ -1,15 +1,4 @@
 import React from "react";
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Button from '@mui/material/Button';
-import Accordion from '@mui/material/Accordion';
-import AccordionSummary from '@mui/material/AccordionSummary';
-import AccordionDetails from '@mui/material/AccordionDetails';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import Slider from '@mui/material/Slider';
-import Typography from '@mui/material/Typography';
 
 // Simple 1D Perlin-like noise (not true Perlin, but good for wind)
 function lerp(a, b, t) {
@@ -64,6 +53,51 @@ const GROUND_HEIGHT = 40;
 const FIELD_BORDER_RADIUS = 16;
 const FIELD_BG_GRADIENT = "linear-gradient(to top, #b3e6b3 0%, #e0ffe0 100%)";
 
+// --- Custom Foldout Section Component ---
+function FoldoutSection({ title, children, defaultOpen = false }) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <div style={{ marginBottom: 16, border: '1px solid #bbb', borderRadius: 8, background: '#f8fff8' }}>
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{
+          cursor: 'pointer',
+          padding: '8px 12px',
+          fontWeight: 600,
+          borderBottom: open ? '1px solid #bbb' : 'none',
+          background: open ? '#e8fbe8' : '#f8fff8',
+          borderRadius: '8px 8px 0 0',
+          userSelect: 'none',
+        }}
+      >
+        {title} <span style={{ float: 'right', fontWeight: 400 }}>{open ? '▲' : '▼'}</span>
+      </div>
+      {open && <div style={{ padding: 12 }}>{children}</div>}
+    </div>
+  );
+}
+
+// --- Custom Slider ---
+function CustomSlider({ label, value, setValue, min, max, step = 1, description = "", small }) {
+  return (
+    <div style={{ marginBottom: small ? 7 : 14 }}>
+      <label style={{ fontSize: small ? 12 : 14, fontWeight: 500 }}>
+        {label}: <b>{typeof value === 'number' ? value.toFixed(step < 1 ? 2 : 0) : value}</b>
+      </label>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={e => setValue(Number(e.target.value))}
+        style={{ width: '100%', height: small ? 18 : 22 }}
+      />
+      {description && <div style={{ fontSize: small ? 10 : 12, color: '#666', marginTop: 2 }}>{description}</div>}
+    </div>
+  );
+}
+
 export default function GrassField(props) {
   // State for adjustable parameters
   const [minHeight, setMinHeight] = React.useState(GRASS_MIN_HEIGHT);
@@ -79,6 +113,7 @@ export default function GrassField(props) {
   const [windStrength, setWindStrength] = React.useState(4);
   const [baseWidthMultiplier, setBaseWidthMultiplier] = React.useState(1.7);
   const [bladeCount, setBladeCount] = React.useState(props.bladeCount || 70);
+  const [ctrlWindEffect, setCtrlWindEffect] = React.useState(30); // default 30%
 
   // Tree parameters as stateful sliders
   const [treeBaseX, setTreeBaseX] = React.useState(0.25); // as fraction of width
@@ -93,18 +128,26 @@ export default function GrassField(props) {
   const width = props.width || 500;
   const height = props.height || 500;
   const [tick, setTick] = React.useState(0);
+  const lastTimeRef = React.useRef();
   React.useEffect(() => {
     let running = true;
-    function animate() {
+    function animate(now) {
       if (!running) return;
-      setTick((t) => t + 1);
+      if (lastTimeRef.current === undefined) lastTimeRef.current = now;
+      const delta = Math.min((now - lastTimeRef.current) / 1000, 0.1); // seconds, clamp to 0.1s max
+      lastTimeRef.current = now;
+      setTick(t => t + delta);
       requestAnimationFrame(animate);
     }
-    animate();
+    requestAnimationFrame(animate);
     return () => {
       running = false;
     };
   }, []);
+
+  // Wind parameters
+  const [windAngle, setWindAngle] = React.useState(10 * Math.PI / 180); // 10 degrees in radians
+  const [windSpeed, setWindSpeed] = React.useState(0.02);
 
   // Preset state and helpers
   const [presets, setPresets] = React.useState(() => {
@@ -122,7 +165,9 @@ export default function GrassField(props) {
   // Save current as default
   function saveAsDefault() {
     localStorage.setItem('grassDefaults', JSON.stringify({
-      minHeight, maxHeight, minCurve, maxCurve, bladeWidth, baseYOffset, groundHeight, borderRadius, ctrlMinHeight, ctrlMaxHeight, windStrength, baseWidthMultiplier, bladeCount, windAngle, windSpeed
+      minHeight, maxHeight, minCurve, maxCurve, bladeWidth, baseYOffset, groundHeight, borderRadius, ctrlMinHeight, ctrlMaxHeight, windStrength, baseWidthMultiplier, bladeCount, windAngle, windSpeed,
+      ctrlWindEffect,
+      treeBaseX, trunkHeight, trunkWidth, treeLevels, treeBranchSpread, treeBranchScale, treeMinBranchWidth, treeBranchesPerNode
     }));
   }
   // Load default on mount
@@ -146,6 +191,15 @@ export default function GrassField(props) {
         setBladeCount(d.bladeCount);
         setWindAngle(d.windAngle);
         setWindSpeed(d.windSpeed);
+        if (d.ctrlWindEffect !== undefined) setCtrlWindEffect(d.ctrlWindEffect);
+        if (d.treeBaseX !== undefined) setTreeBaseX(d.treeBaseX);
+        if (d.trunkHeight !== undefined) setTrunkHeight(d.trunkHeight);
+        if (d.trunkWidth !== undefined) setTrunkWidth(d.trunkWidth);
+        if (d.treeLevels !== undefined) setTreeLevels(d.treeLevels);
+        if (d.treeBranchSpread !== undefined) setTreeBranchSpread(d.treeBranchSpread);
+        if (d.treeBranchScale !== undefined) setTreeBranchScale(d.treeBranchScale);
+        if (d.treeMinBranchWidth !== undefined) setTreeMinBranchWidth(d.treeMinBranchWidth);
+        if (d.treeBranchesPerNode !== undefined) setTreeBranchesPerNode(d.treeBranchesPerNode);
       }
     } catch {}
   }, []);
@@ -158,7 +212,9 @@ export default function GrassField(props) {
       {
         name: presetName.trim(),
         values: {
-          minHeight, maxHeight, minCurve, maxCurve, bladeWidth, baseYOffset, groundHeight, borderRadius, ctrlMinHeight, ctrlMaxHeight, windStrength, baseWidthMultiplier, bladeCount, windAngle, windSpeed
+          minHeight, maxHeight, minCurve, maxCurve, bladeWidth, baseYOffset, groundHeight, borderRadius, ctrlMinHeight, ctrlMaxHeight, windStrength, baseWidthMultiplier, bladeCount, windAngle, windSpeed,
+          ctrlWindEffect,
+          treeBaseX, trunkHeight, trunkWidth, treeLevels, treeBranchSpread, treeBranchScale, treeMinBranchWidth, treeBranchesPerNode
         }
       }
     ];
@@ -183,6 +239,15 @@ export default function GrassField(props) {
     setBladeCount(values.bladeCount);
     setWindAngle(values.windAngle);
     setWindSpeed(values.windSpeed);
+    if (values.ctrlWindEffect !== undefined) setCtrlWindEffect(values.ctrlWindEffect);
+    if (values.treeBaseX !== undefined) setTreeBaseX(values.treeBaseX);
+    if (values.trunkHeight !== undefined) setTrunkHeight(values.trunkHeight);
+    if (values.trunkWidth !== undefined) setTrunkWidth(values.trunkWidth);
+    if (values.treeLevels !== undefined) setTreeLevels(values.treeLevels);
+    if (values.treeBranchSpread !== undefined) setTreeBranchSpread(values.treeBranchSpread);
+    if (values.treeBranchScale !== undefined) setTreeBranchScale(values.treeBranchScale);
+    if (values.treeMinBranchWidth !== undefined) setTreeMinBranchWidth(values.treeMinBranchWidth);
+    if (values.treeBranchesPerNode !== undefined) setTreeBranchesPerNode(values.treeBranchesPerNode);
   }
 
   // Calculate the maximum allowed blade length for the current field size
@@ -191,10 +256,6 @@ export default function GrassField(props) {
   // Clamp minHeight and maxHeight to maxAllowedLen
   const clampedMinHeight = Math.min(minHeight, maxAllowedLen);
   const clampedMaxHeight = Math.min(maxHeight, maxAllowedLen);
-
-  // Wind parameters
-  const [windAngle, setWindAngle] = React.useState(10 * Math.PI / 180); // 10 degrees in radians
-  const [windSpeed, setWindSpeed] = React.useState(0.02);
 
   // Compute ground points for terrain
   const groundPoints = [];
@@ -232,8 +293,10 @@ export default function GrassField(props) {
     const maxAllowedLen = baseY - 5; // 5px margin from top
     const bladeLen = Math.min(unclampedLen, maxAllowedLen);
     const curve = lerp(minCurve, maxCurve, pseudoRandom(i + 100));
+    const curveAmount = lerp(minCurve, maxCurve, pseudoRandom(i + 800)) / 100; // scale to [0,1]
+    const ctrlHeightFrac = lerp(ctrlMinHeight, ctrlMaxHeight, pseudoRandom(i + 700));
     // Wind field position for this blade
-    const windT = tick * windSpeed;
+    const windT = tick * windSpeed * 60; // scale so windSpeed is similar to before
     const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
     const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
     // Sample noise field for wind intensity
@@ -241,18 +304,45 @@ export default function GrassField(props) {
     // Wind push vector (direction * intensity * strength)
     const windPushX = Math.cos(windAngle) * windIntensity * windStrength;
     const windPushY = Math.sin(windAngle) * windIntensity * windStrength;
-    // Control point (minimal wind, just a little for realism)
-    const ctrlHeightFrac = lerp(ctrlMinHeight, ctrlMaxHeight, pseudoRandom(i + 700));
-    // Use minCurve/maxCurve to control the amount of curve (bend) for each blade
-    const curveAmount = lerp(minCurve, maxCurve, pseudoRandom(i + 800)) / 100; // scale to [0,1]
-    const ctrlX = baseX + (windPushX * 0.18 + lerp(-10, 10, pseudoRandom(i + 200))) * curveAmount;
-    let ctrlY = baseY - bladeLen * ctrlHeightFrac + (windPushY * 0.12 + lerp(-10, 10, pseudoRandom(i + 300))) * curveAmount;
+    // Calculate tip position (before clamping)
+    let tipX = baseX + windPushX + lerp(-8, 8, pseudoRandom(i + 400));
     let tipY = baseY - bladeLen + windPushY + lerp(-8, 8, pseudoRandom(i + 500));
-    // Clamp ctrlY and tipY to not go below baseY
+    // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
+    const dx = tipX - baseX;
+    const dy = tipY - baseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > bladeLen) {
+      const scale = bladeLen / dist;
+      tipX = baseX + dx * scale;
+      tipY = baseY + dy * scale;
+    }
+    // Control point: blend between default curve and wind-only position
+    const ctrlWindFrac = ctrlWindEffect / 100;
+    const ctrlFrac = ctrlHeightFrac;
+    const baseToTipX = tipX - baseX;
+    const baseToTipY = tipY - baseY;
+    const ctrlBaseX = baseX + baseToTipX * ctrlFrac;
+    const ctrlBaseY = baseY + baseToTipY * ctrlFrac;
+    // Perpendicular vector (for curve direction)
+    const perpX = -baseToTipY;
+    const perpY = baseToTipX;
+    const perpLen = Math.sqrt(perpX * perpX + perpY * perpY) || 1;
+    const perpNormX = perpX / perpLen;
+    const perpNormY = perpY / perpLen;
+    // Default curve control point (no wind)
+    const curveMag = bladeLen * curveAmount * lerp(-1, 1, pseudoRandom(i + 200));
+    const ctrlCurveX = ctrlBaseX + perpNormX * curveMag;
+    const ctrlCurveY = ctrlBaseY + perpNormY * curveMag;
+    // Wind-only control point (no curve, just wind)
+    const ctrlWindPushX = windPushX * 0.18;
+    const ctrlWindPushY = windPushY * 0.12;
+    const ctrlWindX = ctrlBaseX + ctrlWindPushX;
+    const ctrlWindY = ctrlBaseY + ctrlWindPushY;
+    // Interpolate between default curve and wind-only
+    let ctrlX = lerp(ctrlCurveX, ctrlWindX, ctrlWindFrac);
+    let ctrlY = lerp(ctrlCurveY, ctrlWindY, ctrlWindFrac);
+    // Clamp ctrlY to not go below baseY
     ctrlY = Math.min(ctrlY, baseY);
-    tipY = Math.min(tipY, baseY);
-    // Tip (full wind)
-    const tipX = baseX + windPushX + lerp(-8, 8, pseudoRandom(i + 400));
     // Calculate left/right offsets for blade width
     // The base should be flat (horizontal), so offset X instead of Y
     const baseYFixed = baseY;
@@ -287,113 +377,96 @@ export default function GrassField(props) {
   // Dialog state
   const [showSettings, setShowSettings] = React.useState(false);
 
-  // MUI slider helper
-  function muiSlider(label, value, setValue, min, max, step = 1, description = "") {
-    return (
-      <div style={{ marginBottom: 18 }}>
-        <Typography gutterBottom variant="body2">{label}: <b>{value}</b></Typography>
-        <Slider
-          value={value}
-          min={min}
-          max={max}
-          step={step}
-          onChange={(_, v) => setValue(Number(v))}
-          valueLabelDisplay="auto"
-        />
-        {description && <Typography variant="caption" color="text.secondary">{description}</Typography>}
-      </div>
-    );
-  }
-
   return (
-    <div style={{ display: 'flex', gap: 24 }}>
-      <div style={{ minWidth: 250, padding: 8 }}>
-        {/* Save/Load UI */}
-        <button onClick={saveAsDefault} style={{marginBottom: 8}}>Save as Default</button>
-        <button onClick={() => setShowPresetDialog(v => !v)} style={{marginLeft: 8, marginBottom: 8}}>
+    <div style={{ width: '100vw', height: '100vh', margin: 0, padding: 0, overflow: 'hidden', position: 'relative', background: FIELD_BG_GRADIENT }}>
+      {/* Buttons above display */}
+      <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10, display: 'flex', gap: 10 }}>
+        <button onClick={saveAsDefault} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Save as Default</button>
+        <button onClick={() => setShowPresetDialog(v => !v)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#f8fff8', fontWeight: 600}}>
           {showPresetDialog ? 'Hide Presets' : 'Show Presets'}
         </button>
-        <Button variant="contained" onClick={() => setShowSettings(true)} style={{marginLeft: 8, marginBottom: 8}}>
-          Open Settings
-        </Button>
-        {showPresetDialog && (
-          <div style={{border: '1px solid #bbb', borderRadius: 8, padding: 12, background: '#f8fff8', marginBottom: 12, minWidth: 220}}>
-            <div style={{fontWeight: 600, marginBottom: 6}}>Presets</div>
-            <div style={{marginBottom: 8}}>
-              <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="Preset name" style={{width: '70%', marginRight: 4}} />
-              <button onClick={savePreset} style={{fontSize: 13}}>Save</button>
-            </div>
-            {presets.length === 0 && <div style={{fontSize: 13, color: '#888'}}>No presets saved.</div>}
-            {presets.map(p => (
-              <div key={p.name} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
-                <button onClick={() => loadPreset(p.values)} style={{marginRight: 8, fontSize: 13}}>{p.name}</button>
-                <button onClick={() => {
-                  const filtered = presets.filter(pr => pr.name !== p.name);
-                  setPresets(filtered);
-                  localStorage.setItem('grassPresets', JSON.stringify(filtered));
-                }} style={{fontSize: 13, color: '#a00'}}>Delete</button>
-              </div>
-            ))}
-          </div>
-        )}
+        <button onClick={() => setShowSettings(true)} style={{fontSize: 13, padding: '4px 10px', borderRadius: 6, border: '1px solid #bbb', background: '#e8fbe8', fontWeight: 600}}>Settings</button>
       </div>
-      <Dialog open={showSettings} onClose={() => setShowSettings(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Field & Tree Settings</DialogTitle>
-        <DialogContent dividers>
-          <Accordion defaultExpanded>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}><b>Grass Field</b></AccordionSummary>
-            <AccordionDetails>
-              {muiSlider('Blade Count', bladeCount, v => setBladeCount(Number(v)), 10, 300, 1, 'Number of grass blades in the field')}
-              {muiSlider('Min Height', clampedMinHeight, setMinHeight, 5, maxAllowedLen, 1, 'Minimum possible blade height (pixels).')}
-              {muiSlider('Max Height', clampedMaxHeight, setMaxHeight, clampedMinHeight, maxAllowedLen, 1, 'Maximum possible blade height (pixels).')}
-              {muiSlider('Min Curve', minCurve, setMinCurve, 0, 100, 1, 'Minimum curve (bend) of blades.')}
-              {muiSlider('Max Curve', maxCurve, setMaxCurve, 0, 120, 1, 'Maximum curve (bend) of blades.')}
-              {muiSlider('Blade Width', bladeWidth, setBladeWidth, 1, 12, 1, 'Thickness of each blade.')}
-              {muiSlider('Base Width', baseWidthMultiplier, setBaseWidthMultiplier, 1, 6, 0.01, 'Multiplier for the base thickness of each blade')}
-              {muiSlider('Base Y Offset', baseYOffset, setBaseYOffset, 0, 100, 1, 'Vertical offset of grass base from the bottom.')}
-              {muiSlider('Ground Height', groundHeight, setGroundHeight, 10, 100, 1, 'Height of the ground area.')}
-              {muiSlider('Border Radius', borderRadius, setBorderRadius, 0, 40, 1, 'Corner roundness of the field.')}
-            </AccordionDetails>
-          </Accordion>
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}><b>Wind</b></AccordionSummary>
-            <AccordionDetails>
-              {muiSlider('Wind Angle', Math.round(windAngle * 180 / Math.PI), v => setWindAngle(Number(v) * Math.PI / 180), 0, 360, 1, 'Direction of wind (degrees, 0 = right, 90 = down)')}
-              {muiSlider('Wind Speed', windSpeed, setWindSpeed, 0.01, 0.25, 0.01, 'Speed of wind field movement')}
-              {muiSlider('Wind Strength', windStrength, setWindStrength, 0, 60, 1, 'How much the wind bends the grass tips')}
-            </AccordionDetails>
-          </Accordion>
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}><b>Blade Shape</b></AccordionSummary>
-            <AccordionDetails>
-              {muiSlider('Ctrl Min Height', ctrlMinHeight, setCtrlMinHeight, 0.3, 0.9, 0.01, 'Lowest possible control point (as a fraction of blade height).')}
-              {muiSlider('Ctrl Max Height', ctrlMaxHeight, setCtrlMaxHeight, 0.4, 1.0, 0.01, 'Highest possible control point (as a fraction of blade height).')}
-            </AccordionDetails>
-          </Accordion>
-          <Accordion>
-            <AccordionSummary expandIcon={<ExpandMoreIcon />}><b>Tree</b></AccordionSummary>
-            <AccordionDetails>
-              {muiSlider('Tree X Position', Math.round(treeBaseX * 100), v => setTreeBaseX(Number(v) / 100), 0, 100, 1, 'Horizontal position of tree (percent of width)')}
-              {muiSlider('Trunk Height', trunkHeight, setTrunkHeight, 40, 400, 1, 'Height of the main trunk')}
-              {muiSlider('Trunk Width', trunkWidth, setTrunkWidth, 4, 60, 0.1, 'Thickness of the main trunk')}
-              {muiSlider('Branch Levels', treeLevels, setTreeLevels, 1, 10, 1, 'How many times branches can rebranch')}
-              {muiSlider('Branches per Node', treeBranchesPerNode, setTreeBranchesPerNode, 2, 6, 1, 'How many branches split at each node')}
-              {muiSlider('Branch Spread', Math.round(treeBranchSpread * 180 / Math.PI), v => setTreeBranchSpread(Number(v) * Math.PI / 180), 10, 180, 1, 'Spread angle of branches (degrees)')}
-              {muiSlider('Branch Scale', treeBranchScale, setTreeBranchScale, 0.3, 0.9, 0.01, 'Relative length of each branch compared to its parent')}
-              {muiSlider('Min Branch Width', treeMinBranchWidth, setTreeMinBranchWidth, 0.5, 10, 0.1, 'Minimum width for branches (thinner = more detail)')}
-            </AccordionDetails>
-          </Accordion>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowSettings(false)} color="primary" variant="contained">Close</Button>
-        </DialogActions>
-      </Dialog>
+      {/* Preset dialog (floating, top left) */}
+      {showPresetDialog && (
+        <div style={{position: 'absolute', top: 44, left: 10, zIndex: 20, border: '1px solid #bbb', borderRadius: 8, padding: 12, background: '#f8fff8', minWidth: 220, maxWidth: 320}}>
+          <div style={{fontWeight: 600, marginBottom: 6}}>Presets</div>
+          <div style={{marginBottom: 8}}>
+            <input value={presetName} onChange={e => setPresetName(e.target.value)} placeholder="Preset name" style={{width: '70%', marginRight: 4}} />
+            <button onClick={savePreset} style={{fontSize: 13}}>Save</button>
+          </div>
+          {presets.length === 0 && <div style={{fontSize: 13, color: '#888'}}>No presets saved.</div>}
+          {presets.map(p => (
+            <div key={p.name} style={{display: 'flex', alignItems: 'center', marginBottom: 4}}>
+              <button onClick={() => loadPreset(p.values)} style={{marginRight: 8, fontSize: 13}}>{p.name}</button>
+              <button onClick={() => {
+                const filtered = presets.filter(pr => pr.name !== p.name);
+                setPresets(filtered);
+                localStorage.setItem('grassPresets', JSON.stringify(filtered));
+              }} style={{fontSize: 13, color: '#a00'}}>Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Settings dialog: full height, left side overlay */}
+      {showSettings && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, height: '100vh', width: 340, background: '#fff', zIndex: 1000,
+          boxShadow: '2px 0 16px #0002', borderRight: '1px solid #bbb', display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{
+            position: 'sticky', top: 0, zIndex: 2, background: '#e8fbe8', borderBottom: '1px solid #bbb',
+            padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            minHeight: 0
+          }}>
+            <span style={{fontWeight: 700, fontSize: 15}}>Settings</span>
+            <button onClick={() => setShowSettings(false)} style={{fontWeight: 600, background: '#e8fbe8', border: '1px solid #bbb', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontSize: 13}}>Close</button>
+          </div>
+          <div style={{padding: '10px 12px', fontSize: 12, flex: 1, minHeight: 0, overflowY: 'auto'}}>
+            <FoldoutSection title="Grass Field" defaultOpen>
+              <CustomSlider label="Blade Count" value={bladeCount} setValue={v => setBladeCount(Number(v))} min={10} max={300} step={1} description="Number of grass blades in the field" small />
+              <CustomSlider label="Min Height" value={clampedMinHeight} setValue={setMinHeight} min={5} max={maxAllowedLen} step={1} description="Minimum possible blade height (pixels)." small />
+              <CustomSlider label="Max Height" value={clampedMaxHeight} setValue={setMaxHeight} min={clampedMinHeight} max={maxAllowedLen} step={1} description="Maximum possible blade height (pixels)." small />
+              <CustomSlider label="Min Curve" value={minCurve} setValue={setMinCurve} min={0} max={100} step={1} description="Minimum curve (bend) of blades." small />
+              <CustomSlider label="Max Curve" value={maxCurve} setValue={setMaxCurve} min={0} max={120} step={1} description="Maximum curve (bend) of blades." small />
+              <CustomSlider label="Blade Width" value={bladeWidth} setValue={setBladeWidth} min={1} max={12} step={1} description="Thickness of each blade." small />
+              <CustomSlider label="Base Width" value={baseWidthMultiplier} setValue={setBaseWidthMultiplier} min={1} max={6} step={0.01} description="Multiplier for the base thickness of each blade" small />
+              <CustomSlider label="Base Y Offset" value={baseYOffset} setValue={setBaseYOffset} min={0} max={100} step={1} description="Vertical offset of grass base from the bottom." small />
+              <CustomSlider label="Ground Height" value={groundHeight} setValue={setGroundHeight} min={10} max={100} step={1} description="Height of the ground area." small />
+              <CustomSlider label="Border Radius" value={borderRadius} setValue={setBorderRadius} min={0} max={40} step={1} description="Corner roundness of the field." small />
+            </FoldoutSection>
+            <FoldoutSection title="Wind">
+              <CustomSlider label="Wind Angle" value={Math.round(windAngle * 180 / Math.PI)} setValue={v => setWindAngle(Number(v) * Math.PI / 180)} min={0} max={360} step={1} description="Direction of wind (degrees, 0 = right, 90 = down)" small />
+              <CustomSlider label="Wind Speed" value={windSpeed} setValue={setWindSpeed} min={0.01} max={0.25} step={0.01} description="Speed of wind field movement" small />
+              <CustomSlider label="Wind Strength" value={windStrength} setValue={setWindStrength} min={0} max={60} step={1} description="How much the wind bends the grass tips" small />
+              <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind moves the blade's middle (0% = none, 100% = same as tip)" small />
+            </FoldoutSection>
+            <FoldoutSection title="Blade Shape">
+              <CustomSlider label="Ctrl Min Height" value={ctrlMinHeight} setValue={setCtrlMinHeight} min={0.3} max={0.9} step={0.01} description="Lowest possible control point (as a fraction of blade height)." small />
+              <CustomSlider label="Ctrl Max Height" value={ctrlMaxHeight} setValue={setCtrlMaxHeight} min={0.4} max={1.0} step={0.01} description="Highest possible control point (as a fraction of blade height)." small />
+              <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind affects the middle control point (0% = none, 100% = same as tip)" small />
+            </FoldoutSection>
+            <FoldoutSection title="Tree">
+              <CustomSlider label="Tree X Position" value={Math.round(treeBaseX * 100)} setValue={v => setTreeBaseX(Number(v) / 100)} min={0} max={100} step={1} description="Horizontal position of tree (percent of width)" small />
+              <CustomSlider label="Trunk Height" value={trunkHeight} setValue={setTrunkHeight} min={40} max={400} step={1} description="Height of the main trunk" small />
+              <CustomSlider label="Trunk Width" value={trunkWidth} setValue={setTrunkWidth} min={4} max={60} step={0.1} description="Thickness of the main trunk" small />
+              <CustomSlider label="Branch Levels" value={treeLevels} setValue={setTreeLevels} min={1} max={10} step={1} description="How many times branches can rebranch" small />
+              <CustomSlider label="Branches per Node" value={treeBranchesPerNode} setValue={setTreeBranchesPerNode} min={2} max={6} step={1} description="How many branches split at each node" small />
+              <CustomSlider label="Branch Spread" value={Math.round(treeBranchSpread * 180 / Math.PI)} setValue={v => setTreeBranchSpread(Number(v) * Math.PI / 180)} min={10} max={180} step={1} description="Spread angle of branches (degrees)" small />
+              <CustomSlider label="Branch Scale" value={treeBranchScale} setValue={setTreeBranchScale} min={0.3} max={0.9} step={0.01} description="Relative length of each branch compared to its parent" small />
+              <CustomSlider label="Min Branch Width" value={treeMinBranchWidth} setValue={setTreeMinBranchWidth} min={0.5} max={10} step={0.1} description="Minimum width for branches (thinner = more detail)" small />
+            </FoldoutSection>
+          </div>
+        </div>
+      )}
+      {/* SVG fills the whole screen */}
       <svg
         id="grass-svg"
-        width={width}
-        height={height}
+        width="100vw"
+        height="100vh"
         viewBox={`0 0 ${width} ${height}`}
         style={{
+          width: '100vw', height: '100vh', display: 'block', position: 'absolute', top: 0, left: 0,
           background: FIELD_BG_GRADIENT,
           borderRadius: borderRadius,
         }}
