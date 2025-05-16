@@ -330,16 +330,20 @@ export default function GrassField(props) {
     const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
     const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
     // Sample noise field for wind intensity
-    const windIntensity = perlin2D(windFieldX, windFieldY) * 2 - 1; // [-1, 1]
-    // Wind push vector (direction * intensity * strength)
-    const windPushX = Math.cos(windAngle) * windIntensity * windStrength;
-    const windPushY = Math.sin(windAngle) * windIntensity * windStrength;
-    // Calculate no-wind tip position
-    const tipX_noWind = baseX + lerp(-8, 8, pseudoRandom(i + 400));
-    const tipY_noWind = baseY - bladeLen + lerp(-8, 8, pseudoRandom(i + 500));
+    const windNoise = perlin2D(windFieldX, windFieldY); // [0, 1]
+    // Wind push vector (direction * magnitude * strength)
+    const windPushX = Math.cos(windAngle) * windStrength * windNoise;
+    const windPushY = Math.sin(windAngle) * windStrength * windNoise;
+    // Random offset along wind direction (for both no-wind and wind-bent)
+    const tipRandMag = lerp(0, 8, pseudoRandom(i + 400));
+    const tipRandX = Math.cos(windAngle) * tipRandMag;
+    const tipRandY = Math.sin(windAngle) * tipRandMag;
+    // Calculate no-wind tip position (straight up, plus random along wind direction)
+    const tipX_noWind = baseX + tipRandX;
+    const tipY_noWind = baseY - bladeLen + tipRandY;
     // Calculate tip position (with wind, before clamping)
-    let tipX = baseX + windPushX + lerp(-8, 8, pseudoRandom(i + 400));
-    let tipY = baseY - bladeLen + windPushY + lerp(-8, 8, pseudoRandom(i + 500));
+    let tipX = baseX + windPushX + tipRandX;
+    let tipY = baseY - bladeLen + windPushY + tipRandY;
     // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
     const dx = tipX - baseX;
     const dy = tipY - baseY;
@@ -425,8 +429,6 @@ export default function GrassField(props) {
         zIndex: 0,
       }}
     >
-      {/* Blue border for viewport test */}
-      <rect x="0" y="0" width={width} height={height} fill="none" stroke="blue" strokeWidth="3" />
       {/* UI overlays inside SVG, clipped by border */}
       <foreignObject x="0" y="0" width={width} height={height} style={{pointerEvents: 'none'}}>
         {/* Overlay container: flex column, no absolute positioning */}
