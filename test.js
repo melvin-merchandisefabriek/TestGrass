@@ -70,13 +70,17 @@ function GrassField(props) {
     const curve = lerp(minCurve, maxCurve, pseudoRandom(i + 100));
     // Wind offset using perlin noise
     const windT = tick * 0.015;
-    const wind =
+    const windCtrl =
       perlin1D(i * 0.18 + windT) * 32 + perlin1D(i * 0.5 + windT * 0.5) * 10;
+    // Tip wind lags behind control point (drag effect)
+    const tipLag = 0.18; // seconds of lag
+    const windTip =
+      perlin1D(i * 0.18 + windT - tipLag) * 18 + perlin1D(i * 0.5 + (windT - tipLag) * 0.5) * 5;
     // Control point (bend)
-    const ctrlX = baseX + wind + lerp(-10, 10, pseudoRandom(i + 200));
+    const ctrlX = baseX + windCtrl + lerp(-10, 10, pseudoRandom(i + 200));
     const ctrlY = baseY - bladeLen * 0.6 + lerp(-10, 10, pseudoRandom(i + 300));
-    // Tip
-    const tipX = baseX + wind * 0.5 + lerp(-8, 8, pseudoRandom(i + 400));
+    // Tip (dragging behind the control point)
+    const tipX = baseX + windTip + lerp(-8, 8, pseudoRandom(i + 400));
     const tipY = baseY - bladeLen + lerp(-8, 8, pseudoRandom(i + 500));
     // Color variation
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
