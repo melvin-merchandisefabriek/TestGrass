@@ -98,6 +98,205 @@ function CustomSlider({ label, value, setValue, min, max, step = 1, description 
   );
 }
 
+// --- Models ---
+class GrassBlade {
+  constructor({ baseX, baseY, bladeLen, curve, ctrlMinHeight, ctrlMaxHeight, windAngle, windStrength, windNoise, tipRandMag, bladeWidth, baseWidthMultiplier, color }) {
+    this.baseX = baseX;
+    this.baseY = baseY;
+    this.bladeLen = Math.max(0, bladeLen || 0);
+    this.curve = curve || 0;
+    this.ctrlMinHeight = Math.max(0, ctrlMinHeight || 0.6);
+    this.ctrlMaxHeight = Math.max(0, ctrlMaxHeight || 0.8);
+    this.windAngle = windAngle || 0;
+    this.windStrength = windStrength || 0;
+    this.windNoise = windNoise || 0;
+    this.tipRandMag = tipRandMag || 0;
+    this.bladeWidth = Math.max(0.1, bladeWidth || 1);
+    this.baseWidthMultiplier = Math.max(0.1, baseWidthMultiplier || 1);
+    this.color = color || '#228B22';
+  }
+
+  getTip(tipRandX, tipRandY, windPushX, windPushY) {
+    // Calculate tip position (with wind, before clamping)
+    let tipX = this.baseX + windPushX + tipRandX;
+    let tipY = this.baseY - this.bladeLen + windPushY + tipRandY;
+    // Project tip offset onto wind direction
+    const tipVecX = tipX - this.baseX;
+    const tipVecY = tipY - this.baseY;
+    const windDirX = Math.cos(this.windAngle);
+    const windDirY = Math.sin(this.windAngle);
+    const proj = tipVecX * windDirX + tipVecY * windDirY;
+    if (proj < 0) {
+      // Place tip exactly bladeLen away from base, in wind direction
+      tipX = this.baseX + windDirX * this.bladeLen;
+      tipY = this.baseY + windDirY * this.bladeLen;
+    }
+    // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
+    const dx = tipX - this.baseX;
+    const dy = tipY - this.baseY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > this.bladeLen) {
+      const scale = this.bladeLen / dist;
+      tipX = this.baseX + dx * scale;
+      tipY = this.baseY + dy * scale;
+    }
+    // Clamp tip so it never goes below the base (ground)
+    if (tipY > this.baseY) {
+      if (windDirY !== 0) {
+        tipX = this.baseX + windDirX * 0;
+        tipY = this.baseY;
+      } else {
+        tipY = this.baseY;
+      }
+    }
+    return { tipX, tipY };
+  }
+
+  getControlPoints(curveAngle, tipX, tipY, ctrlWindEffect) {
+    // No-wind (curved) control point
+    const ctrlCurveX = this.baseX + Math.cos(curveAngle) * this.bladeLen * this.ctrlMinHeight;
+    const ctrlCurveY = this.baseY + Math.sin(curveAngle) * this.bladeLen * this.ctrlMinHeight;
+    // Wind-bent control point
+    const tipDirX = tipX - this.baseX;
+    const tipDirY = tipY - this.baseY;
+    const tipLen = Math.sqrt(tipDirX * tipDirX + tipDirY * tipDirY) || 1;
+    const ctrlWindX = this.baseX + (tipDirX / tipLen) * (this.bladeLen * this.ctrlMinHeight);
+    const ctrlWindY = this.baseY + (tipDirY / tipLen) * (this.bladeLen * this.ctrlMinHeight);
+    // Interpolate
+    const ctrlWindFrac = (typeof ctrlWindEffect === 'number' ? ctrlWindEffect : 0) / 100;
+    let ctrlX = lerp(ctrlCurveX, ctrlWindX, ctrlWindFrac);
+    let ctrlY = lerp(ctrlCurveY, ctrlWindY, ctrlWindFrac);
+    ctrlY = Math.min(ctrlY, this.baseY);
+    return { ctrlX, ctrlY };
+  }
+
+  getBladePath(tipX, tipY, ctrlX, ctrlY, bladeWidth, baseWidthMultiplier, curveAmount, windAngle) {
+    const baseYFixed = this.baseY;
+    const halfWidth = bladeWidth / 2;
+    const baseLeftX = this.baseX - halfWidth * baseWidthMultiplier;
+    const baseLeftY = baseYFixed;
+    const baseRightX = this.baseX + halfWidth * baseWidthMultiplier;
+    const baseRightY = baseYFixed;
+    const ctrlPerpAngle = windAngle + Math.PI / 2;
+    const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
+    const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
+    const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
+    const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
+    return `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
+  }
+}
+
+class TreeBranch {
+  constructor({ x, y, angle, length, width, level, params, pseudoRandom, drawBranch }) {
+    this.x = x;
+    this.y = y;
+    this.angle = angle;
+    this.length = Math.max(0, length || 0);
+    this.width = Math.max(0, width || 0);
+    this.level = level || 0;
+    this.params = params || {};
+    this.pseudoRandom = pseudoRandom;
+    this.drawBranch = drawBranch;
+  }
+
+  render(keyPrefix = '') {
+    try {
+      const { treeLevels = 6, treeMinBranchWidth = 1.2, treeBranchesPerNode = 3, treeBranchSpread = Math.PI / 1.3, treeBranchScale = 0.62 } = this.params;
+      // Defensive: bail if any value is NaN or not finite
+      if (
+        typeof this.level !== 'number' ||
+        typeof this.width !== 'number' ||
+        typeof this.x !== 'number' ||
+        typeof this.y !== 'number' ||
+        typeof this.angle !== 'number' ||
+        typeof this.length !== 'number' ||
+        typeof treeLevels !== 'number' ||
+        typeof treeMinBranchWidth !== 'number' ||
+        typeof treeBranchesPerNode !== 'number' ||
+        typeof treeBranchSpread !== 'number' ||
+        typeof treeBranchScale !== 'number' ||
+        !isFinite(this.x) ||
+        !isFinite(this.y) ||
+        !isFinite(this.angle) ||
+        !isFinite(this.length) ||
+        !isFinite(this.width) ||
+        !isFinite(treeLevels) ||
+        !isFinite(treeMinBranchWidth) ||
+        !isFinite(treeBranchesPerNode) ||
+        !isFinite(treeBranchSpread) ||
+        !isFinite(treeBranchScale) ||
+        this.level > treeLevels ||
+        this.width < treeMinBranchWidth ||
+        treeLevels < 0 ||
+        treeMinBranchWidth < 0 ||
+        treeBranchesPerNode < 1 ||
+        treeBranchSpread < 0 ||
+        treeBranchScale <= 0 ||
+        this.length <= 0
+      ) return [];
+      const endX = this.x + Math.cos(this.angle) * this.length;
+      const endY = this.y - Math.sin(this.angle) * this.length;
+      const ctrlX = this.x + Math.cos(this.angle) * this.length * 0.5 + Math.cos(this.angle + 0.5) * 12 * (1 - this.level / (treeLevels + 1));
+      const ctrlY = this.y - Math.sin(this.angle) * this.length * 0.5 - Math.sin(this.angle + 0.5) * 12 * (1 - this.level / (treeLevels + 1));
+      const halfWidth = this.width / 2;
+      const baseLeftX = this.x - halfWidth;
+      const baseLeftY = this.y;
+      const baseRightX = this.x + halfWidth;
+      const baseRightY = this.y;
+      const ctrlPerpAngle = this.angle + Math.PI / 2;
+      const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
+      const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
+      const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
+      const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
+      const tipX = endX;
+      const tipY = endY;
+      const branchPath = `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
+      const color = '#7a4a1a';
+      const path = (
+        <path
+          key={`branch-${keyPrefix}-${this.level}`}
+          d={branchPath}
+          fill={color}
+          stroke={color}
+          strokeWidth={1.2}
+          opacity={0.97}
+        />
+      );
+      let children = [];
+      if (this.level < treeLevels) {
+        const nBranches = treeBranchesPerNode + (this.level === 0 ? 1 : 0);
+        for (let i = 0; i < nBranches; i++) {
+          // Defensive: check for NaN/invalid nBranches
+          if (!Number.isFinite(nBranches) || nBranches < 1) break;
+          const t = nBranches === 1 ? 0.5 : i / (nBranches - 1);
+          const spread = treeBranchSpread * (1 - this.level / (treeLevels + 1));
+          const randBase = this.level * 1000 + i;
+          const branchAng = this.angle - spread / 2 + t * spread + (this.pseudoRandom(randBase + 1) - 0.5) * 0.08;
+          const branchLen = this.length * treeBranchScale * lerp(0.85, 1.1, this.pseudoRandom(randBase + 2));
+          const branchW = this.width * lerp(0.5, 0.7, this.pseudoRandom(randBase + 3));
+          const bx = lerp(this.x, endX, lerp(0.6, 0.8, this.pseudoRandom(randBase + 4)));
+          const by = lerp(this.y, endY, lerp(0.6, 0.8, this.pseudoRandom(randBase + 5)));
+          // Defensive: check for NaN/invalid branch params
+          if (!Number.isFinite(branchAng) || !Number.isFinite(branchLen) || !Number.isFinite(branchW) || !Number.isFinite(bx) || !Number.isFinite(by)) continue;
+          if (branchLen <= 0 || branchW <= 0) continue;
+          children = children.concat(this.drawBranch(bx, by, branchAng, branchLen, branchW, this.level + 1, this.params, this.pseudoRandom, this.drawBranch, `${keyPrefix}-${i}`));
+        }
+      }
+      return [path, ...children];
+    } catch (err) {
+      // Log error to SVG overlay for mobile users
+      if (typeof window !== 'undefined') {
+        window.__TREE_ERROR__ = err && err.stack ? err.stack : String(err);
+      }
+      return [
+        <text x="10" y="30" fill="red" fontSize="16" key="tree-error" style={{fontFamily:'monospace'}}>
+          Tree error: {String(err).slice(0, 80)}
+        </text>
+      ];
+    }
+  }
+}
+
 export default function GrassField(props) {
   // Inject global style to prevent all scrolling and overflow
   React.useEffect(() => {
@@ -178,6 +377,9 @@ export default function GrassField(props) {
   // Wind parameters
   const [windAngle, setWindAngle] = React.useState(10 * Math.PI / 180); // 10 degrees in radians
   const [windSpeed, setWindSpeed] = React.useState(0.02);
+
+  // UI state for settings dialog
+  const [showSettings, setShowSettings] = React.useState(false);
 
   // Preset state and helpers
   const [presets, setPresets] = React.useState(() => {
@@ -317,87 +519,29 @@ export default function GrassField(props) {
   const blades = [];
   for (let i = 0; i < bladeCount; i++) {
     const baseX = lerp(30, width - 30, i / (bladeCount - 1));
-    const baseY = getGroundY(baseX); // This will be at the top of the ground
-    // Use clamped heights for bladeLen
+    const baseY = getGroundY(baseX);
     let unclampedLen = lerp(clampedMinHeight, clampedMaxHeight, pseudoRandom(i));
-    const maxAllowedLen = baseY - 5; // 5px margin from top
+    const maxAllowedLen = baseY - 5;
     const bladeLen = Math.min(unclampedLen, maxAllowedLen);
     const curve = lerp(minCurve, maxCurve, pseudoRandom(i + 100));
-    const curveAmount = lerp(minCurve, maxCurve, pseudoRandom(i + 800)) / 100; // scale to [0,1]
+    const curveAmount = lerp(minCurve, maxCurve, pseudoRandom(i + 800)) / 100;
     const ctrlHeightFrac = lerp(ctrlMinHeight, ctrlMaxHeight, pseudoRandom(i + 700));
-    // Wind field position for this blade
-    const windT = tick * windSpeed * 60; // scale so windSpeed is similar to before
+    const windT = tick * windSpeed * 60;
     const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
     const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
-    // Sample noise field for wind intensity
-    const windNoise = perlin2D(windFieldX, windFieldY); // [0, 1]
-    // Wind push vector (direction * magnitude * strength)
+    const windNoise = perlin2D(windFieldX, windFieldY);
     const windPushX = Math.cos(windAngle) * windStrength * windNoise;
     const windPushY = Math.sin(windAngle) * windStrength * windNoise;
-    // Random offset along wind direction (for both no-wind and wind-bent)
     const tipRandMag = lerp(0, 8, pseudoRandom(i + 400));
     const tipRandX = Math.cos(windAngle) * tipRandMag;
     const tipRandY = Math.sin(windAngle) * tipRandMag;
-    // Calculate no-wind tip position (straight up, plus random along wind direction)
-    const tipX_noWind = baseX + tipRandX;
-    const tipY_noWind = baseY - bladeLen + tipRandY;
-    // Calculate tip position (with wind, before clamping)
-    let tipX = baseX + windPushX + tipRandX;
-    let tipY = baseY - bladeLen + windPushY + tipRandY;
-    // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
-    const dx = tipX - baseX;
-    const dy = tipY - baseY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > bladeLen) {
-      const scale = bladeLen / dist;
-      tipX = baseX + dx * scale;
-      tipY = baseY + dy * scale;
-    }
-    // Control point: always interpolate between no-wind and wind-bent positions
-    const ctrlWindFrac = ctrlWindEffect / 100;
-    const ctrlFrac = ctrlHeightFrac;
-    // No-wind control point (project along no-wind base-to-tip vector, add curve)
-    const baseToTipX_noWind = tipX_noWind - baseX;
-    const baseToTipY_noWind = tipY_noWind - baseY;
-    const ctrlBaseX_noWind = baseX + baseToTipX_noWind * ctrlFrac;
-    const ctrlBaseY_noWind = baseY + baseToTipY_noWind * ctrlFrac;
-    const perpX_noWind = -baseToTipY_noWind;
-    const perpY_noWind = baseToTipX_noWind;
-    const perpLen_noWind = Math.sqrt(perpX_noWind * perpX_noWind + perpY_noWind * perpY_noWind) || 1;
-    const perpNormX_noWind = perpX_noWind / perpLen_noWind;
-    const perpNormY_noWind = perpY_noWind / perpLen_noWind;
-    const curveMag = bladeLen * curveAmount * lerp(-1, 1, pseudoRandom(i + 200));
-    const ctrlCurveX = ctrlBaseX_noWind + perpNormX_noWind * curveMag;
-    const ctrlCurveY = ctrlBaseY_noWind + perpNormY_noWind * curveMag;
-    // Wind-bent control point (project along wind-bent base-to-tip vector, no curve)
-    const baseToTipX_wind = tipX - baseX;
-    const baseToTipY_wind = tipY - baseY;
-    const ctrlWindX = baseX + baseToTipX_wind * ctrlFrac;
-    const ctrlWindY = baseY + baseToTipY_wind * ctrlFrac;
-    // Interpolate between no-wind curve and wind-bent (no curve)
-    let ctrlX = lerp(ctrlCurveX, ctrlWindX, ctrlWindFrac);
-    let ctrlY = lerp(ctrlCurveY, ctrlWindY, ctrlWindFrac);
-    // Clamp ctrlY to not go below baseY
-    ctrlY = Math.min(ctrlY, baseY);
-    // Calculate left/right offsets for blade width
-    // The base should be flat (horizontal), so offset X instead of Y
-    const baseYFixed = baseY;
-    const halfWidth = bladeWidth / 2;
-    const baseLeftX = baseX - halfWidth * baseWidthMultiplier;
-    const baseLeftY = baseYFixed;
-    const baseRightX = baseX + halfWidth * baseWidthMultiplier;
-    const baseRightY = baseYFixed;
-    // Control left/right (use wind direction for 3D effect, also scale by curveAmount)
-    const ctrlPerpAngle = windAngle + Math.PI / 2;
-    const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    // Path for filled blade (triangle-like)
-    const bladePath = `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
-    // Color variation
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
     const color = `rgb(30,${green},30)`;
+    const blade = new GrassBlade({ baseX, baseY, bladeLen, curve, ctrlMinHeight, ctrlMaxHeight, windAngle, windStrength, windNoise, tipRandMag, bladeWidth, baseWidthMultiplier, color });
+    const { tipX, tipY } = blade.getTip(tipRandX, tipRandY, windPushX, windPushY);
+    const curveAngle = -Math.PI / 2 + lerp(-curve, curve, pseudoRandom(i + 200)) * Math.PI / 180;
+    const { ctrlX, ctrlY } = blade.getControlPoints(curveAngle, tipX, tipY, ctrlWindEffect);
+    const bladePath = blade.getBladePath(tipX, tipY, ctrlX, ctrlY, bladeWidth, baseWidthMultiplier, curveAmount, windAngle);
     blades.push(
       <path
         key={i}
@@ -409,9 +553,6 @@ export default function GrassField(props) {
       />
     );
   }
-
-  // Dialog state
-  const [showSettings, setShowSettings] = React.useState(false);
 
   return (
     <svg
@@ -429,6 +570,15 @@ export default function GrassField(props) {
         zIndex: 0,
       }}
     >
+      {/* Error overlay always visible at top if error exists */}
+      {typeof window !== 'undefined' && window.__TREE_ERROR__ && (
+        <g>
+          <rect x="0" y="0" width={width} height="40" fill="#fff8" />
+          <text x="10" y="28" fill="red" fontSize="18" style={{fontFamily:'monospace'}}>
+            {window.__TREE_ERROR__}
+          </text>
+        </g>
+      )}
       {/* UI overlays inside SVG, clipped by border */}
       <foreignObject x="0" y="0" width={width} height={height} style={{pointerEvents: 'none'}}>
         {/* Overlay container: flex column, no absolute positioning */}
@@ -542,70 +692,19 @@ export default function GrassField(props) {
       })()}
       {/* Tree - recursive trunk and branches */}
       {(() => {
-        // Tree parameters (from state)
-        const baseX = width * treeBaseX;
-        const baseY = getGroundY(baseX);
-        // Recursive function to draw branches (deterministic randomness)
-        function drawBranch(x, y, angle, length, width, level, branchSeed = 0) {
-          if (level > treeLevels || width < treeMinBranchWidth) return [];
-          // End point of this branch
-          const endX = x + Math.cos(angle) * length;
-          const endY = y - Math.sin(angle) * length;
-          // Control point for the curve
-          const ctrlX = x + Math.cos(angle) * length * 0.5 + Math.cos(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
-          const ctrlY = y - Math.sin(angle) * length * 0.5 - Math.sin(angle + 0.5) * 12 * (1 - level / (treeLevels + 1));
-          // Triangle-like path (like a thick grass blade)
-          const halfWidth = width / 2;
-          // Base left/right
-          const baseLeftX = x - halfWidth;
-          const baseLeftY = y;
-          const baseRightX = x + halfWidth;
-          const baseRightY = y;
-          // Control left/right (for thickness at curve)
-          const ctrlPerpAngle = angle + Math.PI / 2;
-          const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
-          const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
-          const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7;
-          const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7;
-          // Tip (single point)
-          const tipX = endX;
-          const tipY = endY;
-          // Path for filled branch (triangle-like)
-          const branchPath = `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
-          const color = '#7a4a1a';
-          const path = (
-            <path
-              key={`branch-${x}-${y}-${level}`}
-              d={branchPath}
-              fill={color}
-              stroke={color}
-              strokeWidth={1.2}
-              opacity={0.97}
-            />
-          );
-          // Branching
-          let children = [];
-          if (level < treeLevels) {
-            const nBranches = treeBranchesPerNode + (level === 0 ? 1 : 0); // Trunk can split into more
-            for (let i = 0; i < nBranches; i++) {
-              const t = nBranches === 1 ? 0.5 : i / (nBranches - 1);
-              const spread = treeBranchSpread * (1 - level / (treeLevels + 1));
-              // Use deterministic pseudoRandom for all randomness
-              const randBase = branchSeed * 100 + i + level * 1000;
-              const branchAng = angle - spread / 2 + t * spread + (pseudoRandom(randBase + 1) - 0.5) * 0.08;
-              const branchLen = length * treeBranchScale * lerp(0.85, 1.1, pseudoRandom(randBase + 2));
-              const branchW = width * lerp(0.5, 0.7, pseudoRandom(randBase + 3));
-              // Branches start at 60-80% up the parent branch
-              const bx = lerp(x, endX, lerp(0.6, 0.8, pseudoRandom(randBase + 4)));
-              const by = lerp(y, endY, lerp(0.6, 0.8, pseudoRandom(randBase + 5)));
-              children = children.concat(drawBranch(bx, by, branchAng, branchLen, branchW, level + 1, randBase));
-            }
+        try {
+          const baseX = width * treeBaseX;
+          const baseY = getGroundY(baseX);
+          const params = { treeLevels, treeMinBranchWidth, treeBranchesPerNode, treeBranchSpread, treeBranchScale };
+          function drawBranch(x, y, angle, length, width, level, params, pseudoRandom, drawBranch, keyPrefix = '') {
+            if (!isFinite(x) || !isFinite(y) || !isFinite(angle) || !isFinite(length) || !isFinite(width) || level > (params.treeLevels || 6) + 2) return [];
+            const branch = new TreeBranch({ x, y, angle, length, width, level, params, pseudoRandom, drawBranch });
+            return branch.render(keyPrefix);
           }
-          return [path, ...children];
+          return drawBranch(baseX, baseY, Math.PI / 2, trunkHeight, trunkWidth, 0, params, pseudoRandom, drawBranch);
+        } catch (e) {
+          return null;
         }
-
-        // Draw the main trunk and all branches
-        return drawBranch(baseX, baseY, Math.PI / 2, trunkHeight, trunkWidth, 0, 0);
       })()}
       {/* Grass blades */}
       {blades}
