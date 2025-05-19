@@ -100,88 +100,65 @@ function CustomSlider({ label, value, setValue, min, max, step = 1, description 
 
 // --- Models ---
 class GrassBlade {
-  constructor({ baseX, baseY, bladeLen, curve, ctrlMinHeight, ctrlMaxHeight, windAngle, windStrength, windNoise, tipRandMag, bladeWidth, baseWidthMultiplier, color }) {
+  constructor({ baseX, baseY, bladeLen, windAngle, windStrength, color, bladeWidth, baseWidthMultiplier }) {
     this.baseX = baseX;
     this.baseY = baseY;
     this.bladeLen = Math.max(0, bladeLen || 0);
-    this.curve = curve || 0;
-    this.ctrlMinHeight = Math.max(0, ctrlMinHeight || 0.6);
-    this.ctrlMaxHeight = Math.max(0, ctrlMaxHeight || 0.8);
     this.windAngle = windAngle || 0;
-    this.windStrength = windStrength || 0;
-    this.windNoise = windNoise || 0;
-    this.tipRandMag = tipRandMag || 0;
+    this.windStrength = windStrength || 0; // [0,1]
+    this.color = color || '#228B22';
     this.bladeWidth = Math.max(0.1, bladeWidth || 1);
     this.baseWidthMultiplier = Math.max(0.1, baseWidthMultiplier || 1);
-    this.color = color || '#228B22';
   }
 
-  getTip(tipRandX, tipRandY, windPushX, windPushY) {
-    // Calculate tip position (with wind, before clamping)
-    let tipX = this.baseX + windPushX + tipRandX;
-    let tipY = this.baseY - this.bladeLen + windPushY + tipRandY;
-    // Project tip offset onto wind direction
-    const tipVecX = tipX - this.baseX;
-    const tipVecY = tipY - this.baseY;
-    const windDirX = Math.cos(this.windAngle);
-    const windDirY = Math.sin(this.windAngle);
-    const proj = tipVecX * windDirX + tipVecY * windDirY;
-    if (proj < 0) {
-      // Place tip exactly bladeLen away from base, in wind direction
-      tipX = this.baseX + windDirX * this.bladeLen;
-      tipY = this.baseY + windDirY * this.bladeLen;
+  // Returns tip position (x, y) on the circle, interpolated between upright and wind direction
+  getTip() {
+    // Upright: angle = -PI/2 (vertical up)
+    // Wind: angle = windAngle
+    const uprightAngle = -Math.PI / 2;
+    const t = this.windStrength; // [0,1]
+    // Interpolate angle
+    let tipAngle = uprightAngle + (this.windAngle - uprightAngle) * t;
+    // Clamp to never go past wind direction
+    if (t > 0) {
+      // Only allow interpolation from upright to windAngle
+      if (this.windAngle > uprightAngle && tipAngle > this.windAngle) tipAngle = this.windAngle;
+      if (this.windAngle < uprightAngle && tipAngle < this.windAngle) tipAngle = this.windAngle;
     }
-    // Clamp tip so blade never stretches: enforce distance from base to tip <= bladeLen
-    const dx = tipX - this.baseX;
-    const dy = tipY - this.baseY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist > this.bladeLen) {
-      const scale = this.bladeLen / dist;
-      tipX = this.baseX + dx * scale;
-      tipY = this.baseY + dy * scale;
-    }
-    // Clamp tip so it never goes below the base (ground)
-    if (tipY > this.baseY) {
-      if (windDirY !== 0) {
-        tipX = this.baseX + windDirX * 0;
-        tipY = this.baseY;
-      } else {
-        tipY = this.baseY;
-      }
-    }
-    return { tipX, tipY };
+    const tipX = this.baseX + Math.cos(tipAngle) * this.bladeLen;
+    const tipY = this.baseY + Math.sin(tipAngle) * this.bladeLen;
+    return { tipX, tipY, tipAngle };
   }
 
-  getControlPoints(curveAngle, tipX, tipY, ctrlWindEffect) {
-    // No-wind (curved) control point
-    const ctrlCurveX = this.baseX + Math.cos(curveAngle) * this.bladeLen * this.ctrlMinHeight;
-    const ctrlCurveY = this.baseY + Math.sin(curveAngle) * this.bladeLen * this.ctrlMinHeight;
-    // Wind-bent control point
-    const tipDirX = tipX - this.baseX;
-    const tipDirY = tipY - this.baseY;
-    const tipLen = Math.sqrt(tipDirX * tipDirX + tipDirY * tipDirY) || 1;
-    const ctrlWindX = this.baseX + (tipDirX / tipLen) * (this.bladeLen * this.ctrlMinHeight);
-    const ctrlWindY = this.baseY + (tipDirY / tipLen) * (this.bladeLen * this.ctrlMinHeight);
-    // Interpolate
-    const ctrlWindFrac = (typeof ctrlWindEffect === 'number' ? ctrlWindEffect : 0) / 100;
-    let ctrlX = lerp(ctrlCurveX, ctrlWindX, ctrlWindFrac);
-    let ctrlY = lerp(ctrlCurveY, ctrlWindY, ctrlWindFrac);
-    ctrlY = Math.min(ctrlY, this.baseY);
+  // Returns control point (x, y) 30% of the way from upright to wind-bent
+  getControlPoint() {
+    const uprightAngle = -Math.PI / 2;
+    const t = this.windStrength * 0.3; // 30% of wind effect
+    let ctrlAngle = uprightAngle + (this.windAngle - uprightAngle) * t;
+    // Clamp as above
+    if (t > 0) {
+      if (this.windAngle > uprightAngle && ctrlAngle > this.windAngle) ctrlAngle = this.windAngle;
+      if (this.windAngle < uprightAngle && ctrlAngle < this.windAngle) ctrlAngle = this.windAngle;
+    }
+    const ctrlLen = this.bladeLen * 0.6; // control point is 60% up the blade
+    const ctrlX = this.baseX + Math.cos(ctrlAngle) * ctrlLen;
+    const ctrlY = this.baseY + Math.sin(ctrlAngle) * ctrlLen;
     return { ctrlX, ctrlY };
   }
 
-  getBladePath(tipX, tipY, ctrlX, ctrlY, bladeWidth, baseWidthMultiplier, curveAmount, windAngle) {
+  // Returns SVG path for the blade
+  getBladePath(tipX, tipY, ctrlX, ctrlY) {
     const baseYFixed = this.baseY;
-    const halfWidth = bladeWidth / 2;
-    const baseLeftX = this.baseX - halfWidth * baseWidthMultiplier;
+    const halfWidth = this.bladeWidth / 2;
+    const baseLeftX = this.baseX - halfWidth * this.baseWidthMultiplier;
     const baseLeftY = baseYFixed;
-    const baseRightX = this.baseX + halfWidth * baseWidthMultiplier;
+    const baseRightX = this.baseX + halfWidth * this.baseWidthMultiplier;
     const baseRightY = baseYFixed;
-    const ctrlPerpAngle = windAngle + Math.PI / 2;
-    const ctrlLeftX = ctrlX + Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlLeftY = ctrlY + Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlRightX = ctrlX - Math.cos(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
-    const ctrlRightY = ctrlY - Math.sin(ctrlPerpAngle) * halfWidth * 0.7 * curveAmount;
+    // Always use horizontal for base-to-control-point perpendicular offset
+    const ctrlLeftX = ctrlX - halfWidth * 0.7;
+    const ctrlLeftY = ctrlY;
+    const ctrlRightX = ctrlX + halfWidth * 0.7;
+    const ctrlRightY = ctrlY;
     return `M ${baseLeftX} ${baseLeftY} Q ${ctrlLeftX} ${ctrlLeftY} ${tipX} ${tipY} Q ${ctrlRightX} ${ctrlRightY} ${baseRightX} ${baseRightY} Z`;
   }
 }
@@ -523,25 +500,17 @@ export default function GrassField(props) {
     let unclampedLen = lerp(clampedMinHeight, clampedMaxHeight, pseudoRandom(i));
     const maxAllowedLen = baseY - 5;
     const bladeLen = Math.min(unclampedLen, maxAllowedLen);
-    const curve = lerp(minCurve, maxCurve, pseudoRandom(i + 100));
-    const curveAmount = lerp(minCurve, maxCurve, pseudoRandom(i + 800)) / 100;
-    const ctrlHeightFrac = lerp(ctrlMinHeight, ctrlMaxHeight, pseudoRandom(i + 700));
+    // Wind field
     const windT = tick * windSpeed * 60;
     const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
     const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
-    const windNoise = perlin2D(windFieldX, windFieldY);
-    const windPushX = Math.cos(windAngle) * windStrength * windNoise;
-    const windPushY = Math.sin(windAngle) * windStrength * windNoise;
-    const tipRandMag = lerp(0, 8, pseudoRandom(i + 400));
-    const tipRandX = Math.cos(windAngle) * tipRandMag;
-    const tipRandY = Math.sin(windAngle) * tipRandMag;
+    const windStrengthNorm = Math.max(0, Math.min(1, perlin2D(windFieldX, windFieldY)));
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
     const color = `rgb(30,${green},30)`;
-    const blade = new GrassBlade({ baseX, baseY, bladeLen, curve, ctrlMinHeight, ctrlMaxHeight, windAngle, windStrength, windNoise, tipRandMag, bladeWidth, baseWidthMultiplier, color });
-    const { tipX, tipY } = blade.getTip(tipRandX, tipRandY, windPushX, windPushY);
-    const curveAngle = -Math.PI / 2 + lerp(-curve, curve, pseudoRandom(i + 200)) * Math.PI / 180;
-    const { ctrlX, ctrlY } = blade.getControlPoints(curveAngle, tipX, tipY, ctrlWindEffect);
-    const bladePath = blade.getBladePath(tipX, tipY, ctrlX, ctrlY, bladeWidth, baseWidthMultiplier, curveAmount, windAngle);
+    const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle, windStrength: windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
+    const { tipX, tipY } = blade.getTip();
+    const { ctrlX, ctrlY } = blade.getControlPoint();
+    const bladePath = blade.getBladePath(tipX, tipY, ctrlX, ctrlY);
     blades.push(
       <path
         key={i}
@@ -708,6 +677,73 @@ export default function GrassField(props) {
       })()}
       {/* Grass blades */}
       {blades}
+      {/* Wind indicator overlay (top right corner) */}
+      <g style={{ pointerEvents: 'none' }}>
+        <foreignObject x={width - 150 - 18} y={18} width={150} height={70} style={{ pointerEvents: 'none' }}>
+          <div style={{
+            width: 150,
+            height: 70,
+            background: 'rgba(255,255,255,0.82)',
+            borderRadius: 12,
+            boxShadow: '0 2px 8px #0002',
+            border: '1px solid #bbb',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            fontSize: 15,
+            color: '#234',
+            fontWeight: 500,
+            gap: 2,
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}>
+            <span style={{ fontSize: 13, color: '#456', fontWeight: 600, marginBottom: 2 }}>Wind Direction</span>
+            <svg width="44" height="44" style={{ display: 'block', margin: 0 }}>
+              {/* Draw wind direction arrow */}
+              <g transform={`translate(22,22)`}>
+                {/* Draw allowed quadrant (arc), rotated with wind */}
+                {(() => {
+                  const windDeg = windAngle * 180 / Math.PI;
+                  const startDeg = windDeg;
+                  const endDeg = windDeg + 90;
+                  return (
+                    <path d={describeArc(0, 0, 18, startDeg, endDeg)} fill="#b3e6ff88" stroke="#5bc0f7" strokeWidth="2" />
+                  );
+                })()}
+                {/* Draw wind direction arrow */}
+                <g transform={`rotate(${(windAngle * 180 / Math.PI).toFixed(1)})`}>
+                  <line x1="0" y1="0" x2="0" y2="-16" stroke="#1a7ed6" strokeWidth="3" strokeLinecap="round" />
+                  <polygon points="-5,-16 0,-26 5,-16" fill="#1a7ed6" />
+                </g>
+              </g>
+            </svg>
+            <span style={{ fontSize: 13, color: '#234', fontWeight: 500 }}>Strength: <b>{windStrength}</b></span>
+          </div>
+        </foreignObject>
+      </g>
     </svg>
   );
+}
+
+// Helper to describe an SVG arc (for the allowed quadrant)
+function describeArc(cx, cy, r, startAngle, endAngle) {
+  // Angles in degrees
+  const start = polarToCartesian(cx, cy, r, endAngle);
+  const end = polarToCartesian(cx, cy, r, startAngle);
+  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  return [
+    "M", cx, cy,
+    "L", start.x, start.y,
+    "A", r, r, 0, largeArcFlag, 0, end.x, end.y,
+    "Z"
+  ].join(" ");
+}
+function polarToCartesian(cx, cy, r, angleDeg) {
+  const angleRad = (angleDeg - 90) * Math.PI / 180.0;
+  return {
+    x: cx + r * Math.cos(angleRad),
+    y: cy + r * Math.sin(angleRad)
+  };
 }
