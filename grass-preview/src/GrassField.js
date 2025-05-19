@@ -703,17 +703,10 @@ export default function GrassField(props) {
             <svg width="44" height="44" style={{ display: 'block', margin: 0 }}>
               {/* Draw wind direction arrow */}
               <g transform={`translate(22,22)`}>
-                {/* Draw allowed quadrant (arc), rotated with wind */}
-                {(() => {
-                  const windDeg = windAngle * 180 / Math.PI;
-                  const startDeg = windDeg;
-                  const endDeg = windDeg + 90;
-                  return (
-                    <path d={describeArc(0, 0, 18, startDeg, endDeg)} fill="#b3e6ff88" stroke="#5bc0f7" strokeWidth="2" />
-                  );
-                })()}
+                {/* Draw fixed top half arc */}
+                <path d={describeArc(0, 0, 18, 180, 0)} fill="#b3e6ff88" stroke="#5bc0f7" strokeWidth="2" />
                 {/* Draw wind direction arrow */}
-                <g transform={`rotate(${(windAngle * 180 / Math.PI).toFixed(1)})`}>
+                <g transform={`rotate(${((windAngle * 180 / Math.PI) - 90).toFixed(1)})`}>
                   <line x1="0" y1="0" x2="0" y2="-16" stroke="#1a7ed6" strokeWidth="3" strokeLinecap="round" />
                   <polygon points="-5,-16 0,-26 5,-16" fill="#1a7ed6" />
                 </g>
@@ -722,6 +715,41 @@ export default function GrassField(props) {
             <span style={{ fontSize: 13, color: '#234', fontWeight: 500 }}>Strength: <b>{windStrength}</b></span>
           </div>
         </foreignObject>
+      </g>
+      {/* Noise map overlay: transparent, above all */}
+      <g style={{ pointerEvents: 'none' }}>
+        {(() => {
+          // Draw a grid of small rects, each colored by perlin2D at that point
+          const cellSize = 16; // px
+          const cols = Math.ceil(width / cellSize);
+          const rows = Math.ceil(height / cellSize);
+          const windT = tick * windSpeed * 60;
+          const elements = [];
+          for (let y = 0; y < rows; y++) {
+            for (let x = 0; x < cols; x++) {
+              // Use same wind field logic as grass
+              const px = x * cellSize + cellSize / 2;
+              const py = y * cellSize + cellSize / 2;
+              const windFieldX = px / 80 + Math.cos(windAngle) * windT;
+              const windFieldY = py / 80 + Math.sin(windAngle) * windT;
+              let v = perlin2D(windFieldX, windFieldY);
+              v = Math.max(0, Math.min(1, v));
+              const gray = Math.round(v * 255);
+              elements.push(
+                <rect
+                  key={`nmap-${x}-${y}`}
+                  x={x * cellSize}
+                  y={y * cellSize}
+                  width={cellSize}
+                  height={cellSize}
+                  fill={`rgba(${gray},${gray},${gray},0.18)`}
+                  stroke="none"
+                />
+              );
+            }
+          }
+          return elements;
+        })()}
       </g>
     </svg>
   );
