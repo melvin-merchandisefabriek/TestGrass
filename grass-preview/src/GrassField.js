@@ -333,29 +333,20 @@ export default function GrassField(props) {
   const [treeMinBranchWidth, setTreeMinBranchWidth] = React.useState(1.2);
   const [treeBranchesPerNode, setTreeBranchesPerNode] = React.useState(3);
 
-  const [tick, setTick] = React.useState(0);
-  const lastTimeRef = React.useRef();
-  React.useEffect(() => {
-    let running = true;
-    function animate(now) {
-      if (!running) return;
-      if (lastTimeRef.current === undefined) lastTimeRef.current = now;
-      const delta = Math.min((now - lastTimeRef.current) / 1000, 0.1); // seconds, clamp to 0.1s max
-      lastTimeRef.current = now;
-      setTick(t => t + delta);
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-    return () => {
-      running = false;
-    };
-  }, []);
-
   // Wind parameters
   const [windLeft, setWindLeft] = React.useState(false); // false = right, true = left
-  // Wind angle: 0 (to right) or 180deg (to left)
-  // We want wind to go TO the left (180deg) or TO the right (0deg)
+  const [windSpeed, setWindSpeed] = React.useState(0.02);
+  // windAngle is always derived from windLeft
   const windAngle = windLeft ? Math.PI : 0;
+
+  // Wind field offset state (moves horizontally only)
+  const [windFieldOffset, setWindFieldOffset] = React.useState(0);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setWindFieldOffset((prev) => prev + (windLeft ? -1 : 1) * windSpeed * 8);
+    }, 30); // update every 30ms
+    return () => clearInterval(interval);
+  }, [windLeft, windSpeed]);
 
   // UI state for settings dialog
   const [showSettings, setShowSettings] = React.useState(false);
@@ -400,8 +391,6 @@ export default function GrassField(props) {
         setWindStrength(d.windStrength);
         setBaseWidthMultiplier(d.baseWidthMultiplier);
         setBladeCount(d.bladeCount);
-        setWindAngle(d.windAngle);
-        setWindSpeed(d.windSpeed);
         if (d.ctrlWindEffect !== undefined) setCtrlWindEffect(d.ctrlWindEffect);
         if (d.treeBaseX !== undefined) setTreeBaseX(d.treeBaseX);
         if (d.trunkHeight !== undefined) setTrunkHeight(d.trunkHeight);
@@ -448,8 +437,6 @@ export default function GrassField(props) {
     setWindStrength(values.windStrength);
     setBaseWidthMultiplier(values.baseWidthMultiplier);
     setBladeCount(values.bladeCount);
-    setWindAngle(values.windAngle);
-    setWindSpeed(values.windSpeed);
     if (values.ctrlWindEffect !== undefined) setCtrlWindEffect(values.ctrlWindEffect);
     if (values.treeBaseX !== undefined) setTreeBaseX(values.treeBaseX);
     if (values.trunkHeight !== undefined) setTrunkHeight(values.trunkHeight);
@@ -560,16 +547,15 @@ export default function GrassField(props) {
     let unclampedLen = lerp(clampedMinHeight, clampedMaxHeight, pseudoRandom(i));
     const maxAllowedLen = baseY - 5;
     const bladeLen = Math.min(unclampedLen, maxAllowedLen);
-    // Wind field
-    const windT = tick * windSpeed * 60;
-    // Wind vector: always points TO the direction (right or left)
-    const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
-    const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
+    // Wind field: sample noise map at baseX, moving horizontally
+    const windFieldX = baseX / 80 + windFieldOffset;
+    const windFieldY = baseY / 80;
     const windStrengthNorm = Math.max(0, Math.min(1, perlin2D(windFieldX, windFieldY)));
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
     const color = `rgb(30,${green},30)`;
-    // Adjust windAngle for blade so 0° (right) and 180° (left) match wind TO direction
-    const bladeWindAngle = windAngle - Math.PI / 2;
+    // Wind direction: always left or right
+    // For right wind, use 0 (right); for left wind, use -Math.PI (left, negative direction)
+    const bladeWindAngle = windLeft ? -Math.PI : 0;
     const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle: bladeWindAngle, windStrength: windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
     const tip = blade.getTip();
     const ctrl = blade.getControlPoint();
@@ -883,15 +869,14 @@ export default function GrassField(props) {
           const cellSize = 16; // px
           const cols = Math.ceil(width / cellSize);
           const rows = Math.ceil(height / cellSize);
-          const windT = tick * windSpeed * 60;
+          // Wind field offset moves horizontally only
           const elements = [];
           for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
-              // Wind vector: always points TO the direction (right or left)
               const px = x * cellSize + cellSize / 2;
               const py = y * cellSize + cellSize / 2;
-              const windFieldX = px / 80 + Math.cos(windAngle) * windT;
-              const windFieldY = py / 80 + Math.sin(windAngle) * windT;
+              const windFieldX = px / 80 + windFieldOffset;
+              const windFieldY = py / 80;
               let v = perlin2D(windFieldX, windFieldY);
               v = Math.max(0, Math.min(1, v));
               const gray = Math.round(v * 255);
