@@ -554,9 +554,10 @@ export default function GrassField(props) {
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
     const color = `rgb(30,${green},30)`;
     // Wind direction: always left or right
-    // For right wind, use 0 (right); for left wind, use -Math.PI (left, negative direction)
-    const bladeWindAngle = windLeft ? -Math.PI : 0;
-    const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle: bladeWindAngle, windStrength: windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
+    // FLIPPED: Use -PI/4 for left wind (top-right, quadrant 1), -3*PI/4 for right wind (top-left, quadrant 4)
+    const bladeWindAngle = windLeft ? -Math.PI / 4 : -3 * Math.PI / 4;
+    // Invert the windStrengthNorm so the grass bends in the direction of the noise map movement
+    const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle: bladeWindAngle, windStrength: 1 - windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
     const tip = blade.getTip();
     const ctrl = blade.getControlPoint();
     const bladePath = blade.getBladePath(tip.tipX, tip.tipY, ctrl.ctrlX, ctrl.ctrlY);
