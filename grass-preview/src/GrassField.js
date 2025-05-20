@@ -352,8 +352,10 @@ export default function GrassField(props) {
   }, []);
 
   // Wind parameters
-  const [windAngle, setWindAngle] = React.useState(10 * Math.PI / 180); // 10 degrees in radians
-  const [windSpeed, setWindSpeed] = React.useState(0.02);
+  const [windLeft, setWindLeft] = React.useState(false); // false = right, true = left
+  // Wind angle: 0 (to right) or 180deg (to left)
+  // We want wind to go TO the left (180deg) or TO the right (0deg)
+  const windAngle = windLeft ? Math.PI : 0;
 
   // UI state for settings dialog
   const [showSettings, setShowSettings] = React.useState(false);
@@ -492,6 +494,64 @@ export default function GrassField(props) {
     return lerp(groundPoints[i0][1], groundPoints[i1][1], t);
   }
 
+  // For each blade, draw a reference circle and highlight the allowed quarter (1 for right, 4 for left)
+  const allowedTipArcs = [];
+  for (let i = 0; i < bladeCount; i++) {
+    const baseX = lerp(30, width - 30, i / (bladeCount - 1));
+    const baseY = getGroundY(baseX);
+    let unclampedLen = lerp(clampedMinHeight, clampedMaxHeight, pseudoRandom(i));
+    const maxAllowedLen = baseY - 5;
+    const bladeLen = Math.min(unclampedLen, maxAllowedLen);
+    // Draw the reference circle at the base
+    allowedTipArcs.push(
+      <circle
+        key={`blade-refcircle-${i}`}
+        cx={baseX}
+        cy={baseY}
+        r={bladeLen}
+        fill="none"
+        stroke="#c22"
+        strokeWidth={1.1}
+        opacity={0.18}
+        strokeDasharray="2 2"
+      />
+    );
+    // Highlight the allowed quarter: 1 (top-right, right wind), 4 (top-left, left wind)
+    // Quarter 1: 0° to 90° (right wind), Quarter 4: 270° to 360° (left wind)
+    let arcStartDeg, arcEndDeg;
+    if (windLeft) {
+      arcStartDeg = 270;
+      arcEndDeg = 360;
+    } else {
+      arcStartDeg = 0;
+      arcEndDeg = 90;
+    }
+    allowedTipArcs.push(
+      <path
+        key={`blade-allowed-quarter-${i}`}
+        d={describeArc(baseX, baseY, bladeLen, arcStartDeg, arcEndDeg)}
+        fill="#c22"
+        opacity={0.13}
+        stroke="none"
+      />
+    );
+    // Draw quarter numbers (1-4) on the blade's reference circle
+    const quarterLabels = [
+      { n: 1, angle: 45 },   // Top-right
+      { n: 2, angle: 135 },  // Bottom-right
+      { n: 3, angle: 225 },  // Bottom-left
+      { n: 4, angle: 315 }   // Top-left
+    ];
+    quarterLabels.forEach(({ n, angle }) => {
+      const rad = (angle - 90) * Math.PI / 180;
+      const qx = baseX + Math.cos(rad) * (bladeLen * 0.65);
+      const qy = baseY + Math.sin(rad) * (bladeLen * 0.65);
+      allowedTipArcs.push(
+        <text key={`blade-qnum-${i}-${n}`} x={qx} y={qy} fontSize={bladeLen * 0.28} fill="#c22" textAnchor="middle" alignmentBaseline="middle" style={{fontFamily:'monospace',fontWeight:700,opacity:0.32}}>{n}</text>
+      );
+    });
+  }
+
   // Grass blade parameters (now baseY follows ground)
   const blades = [];
   for (let i = 0; i < bladeCount; i++) {
@@ -502,23 +562,26 @@ export default function GrassField(props) {
     const bladeLen = Math.min(unclampedLen, maxAllowedLen);
     // Wind field
     const windT = tick * windSpeed * 60;
+    // Wind vector: always points TO the direction (right or left)
     const windFieldX = baseX / 80 + Math.cos(windAngle) * windT;
     const windFieldY = baseY / 80 + Math.sin(windAngle) * windT;
     const windStrengthNorm = Math.max(0, Math.min(1, perlin2D(windFieldX, windFieldY)));
     const green = Math.floor(lerp(120, 180, pseudoRandom(i + 600)));
     const color = `rgb(30,${green},30)`;
-    const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle, windStrength: windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
-    const { tipX, tipY } = blade.getTip();
-    const { ctrlX, ctrlY } = blade.getControlPoint();
-    const bladePath = blade.getBladePath(tipX, tipY, ctrlX, ctrlY);
+    // Adjust windAngle for blade so 0° (right) and 180° (left) match wind TO direction
+    const bladeWindAngle = windAngle - Math.PI / 2;
+    const blade = new GrassBlade({ baseX, baseY, bladeLen, windAngle: bladeWindAngle, windStrength: windStrengthNorm, color, bladeWidth, baseWidthMultiplier });
+    const tip = blade.getTip();
+    const ctrl = blade.getControlPoint();
+    const bladePath = blade.getBladePath(tip.tipX, tip.tipY, ctrl.ctrlX, ctrl.ctrlY);
     blades.push(
       <path
         key={i}
         d={bladePath}
         fill={color}
-        stroke={color}
         strokeWidth={1}
         opacity={0.92}
+        stroke={color}
       />
     );
   }
@@ -596,7 +659,7 @@ export default function GrassField(props) {
                 <button onClick={() => setShowSettings(false)} style={{fontWeight: 600, background: '#e8fbe8', border: '1px solid #bbb', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', fontSize: 13}}>Close</button>
               </div>
               <div style={{padding: '10px 12px', fontSize: 12, flex: 1, minHeight: 0, overflowY: 'auto', maxHeight: 'calc(80vh - 48px)'}}>
-                <FoldoutSection title="Grass Field" defaultOpen>
+                <FoldoutSection title="Grass Field" defaultOpen={false}>
                   <CustomSlider label="Blade Count" value={bladeCount} setValue={v => setBladeCount(Number(v))} min={10} max={300} step={1} description="Number of grass blades in the field" small />
                   <CustomSlider label="Min Height" value={clampedMinHeight} setValue={setMinHeight} min={5} max={maxAllowedLen} step={1} description="Minimum possible blade height (pixels)." small />
                   <CustomSlider label="Max Height" value={clampedMaxHeight} setValue={setMaxHeight} min={clampedMinHeight} max={maxAllowedLen} step={1} description="Maximum possible blade height (pixels)." small />
@@ -608,18 +671,48 @@ export default function GrassField(props) {
                   <CustomSlider label="Ground Height" value={groundHeight} setValue={setGroundHeight} min={10} max={100} step={1} description="Height of the ground area." small />
                   <CustomSlider label="Border Radius" value={borderRadius} setValue={setBorderRadius} min={0} max={40} step={1} description="Corner roundness of the field." small />
                 </FoldoutSection>
-                <FoldoutSection title="Wind">
-                  <CustomSlider label="Wind Angle" value={Math.round(windAngle * 180 / Math.PI)} setValue={v => setWindAngle(Number(v) * Math.PI / 180)} min={0} max={360} step={1} description="Direction of wind (degrees, 0 = right, 90 = down)" small />
+                <FoldoutSection title="Wind" defaultOpen={false}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500 }}>Wind Direction:</span>
+                    <button
+                      onClick={() => setWindLeft(false)}
+                      style={{
+                        fontWeight: windLeft ? 400 : 700,
+                        background: windLeft ? '#f8fff8' : '#e8fbe8',
+                        border: '1px solid #bbb',
+                        borderRadius: 6,
+                        padding: '4px 14px',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Right
+                    </button>
+                    <button
+                      onClick={() => setWindLeft(true)}
+                      style={{
+                        fontWeight: windLeft ? 700 : 400,
+                        background: windLeft ? '#e8fbe8' : '#f8fff8',
+                        border: '1px solid #bbb',
+                        borderRadius: 6,
+                        padding: '4px 14px',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Left
+                    </button>
+                  </div>
                   <CustomSlider label="Wind Speed" value={windSpeed} setValue={setWindSpeed} min={0.01} max={0.25} step={0.01} description="Speed of wind field movement" small />
                   <CustomSlider label="Wind Strength" value={windStrength} setValue={setWindStrength} min={0} max={60} step={1} description="How much the wind bends the grass tips" small />
                   <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind moves the blade's middle (0% = none, 100% = same as tip)" small />
                 </FoldoutSection>
-                <FoldoutSection title="Blade Shape">
+                <FoldoutSection title="Blade Shape" defaultOpen={false}>
                   <CustomSlider label="Ctrl Min Height" value={ctrlMinHeight} setValue={setCtrlMinHeight} min={0.3} max={0.9} step={0.01} description="Lowest possible control point (as a fraction of blade height)." small />
                   <CustomSlider label="Ctrl Max Height" value={ctrlMaxHeight} setValue={setCtrlMaxHeight} min={0.4} max={1.0} step={0.01} description="Highest possible control point (as a fraction of blade height)." small />
                   <CustomSlider label="Ctrl Wind Effect" value={ctrlWindEffect} setValue={setCtrlWindEffect} min={0} max={100} step={1} description="How much wind affects the middle control point (0% = none, 100% = same as tip)" small />
                 </FoldoutSection>
-                <FoldoutSection title="Tree">
+                <FoldoutSection title="Tree" defaultOpen={false}>
                   <CustomSlider label="Tree X Position" value={Math.round(treeBaseX * 100)} setValue={v => setTreeBaseX(Number(v) / 100)} min={0} max={100} step={1} description="Horizontal position of tree (percent of width)" small />
                   <CustomSlider label="Trunk Height" value={trunkHeight} setValue={setTrunkHeight} min={40} max={400} step={1} description="Height of the main trunk" small />
                   <CustomSlider label="Trunk Width" value={trunkWidth} setValue={setTrunkWidth} min={4} max={60} step={0.1} description="Thickness of the main trunk" small />
@@ -676,13 +769,81 @@ export default function GrassField(props) {
         }
       })()}
       {/* Grass blades */}
+      {/* Allowed tip region arcs (debug) */}
+      {allowedTipArcs}
       {blades}
+      {/* Debug: Angle reference circle in the middle of the screen */}
+      <g>
+        {(() => {
+          const cx = width / 2;
+          const cy = height / 2;
+          const r = 120;
+          // Draw main circle
+          const elements = [
+            <circle key="main" cx={cx} cy={cy} r={r} fill="none" stroke="#888" strokeWidth={2} opacity={0.5} />
+          ];
+          // Draw axes: up, right, down, left (rotated 90° counterclockwise)
+          const axisLabels = [
+            { angle: 270, label: "Up (0°)" },
+            { angle: 0, label: "Right (90°)" },
+            { angle: 90, label: "Down (180°)" },
+            { angle: 180, label: "Left (270°/-90°)" }
+          ];
+          axisLabels.forEach(({ angle, label }, i) => {
+            const rad = (angle) * Math.PI / 180;
+            const x = cx + Math.cos(rad) * r;
+            const y = cy + Math.sin(rad) * r;
+            elements.push(
+              <line key={`axis-${i}`} x1={cx} y1={cy} x2={x} y2={y} stroke="#444" strokeWidth={1.5} strokeDasharray="4 2" />
+            );
+            // Label
+            const lx = cx + Math.cos(rad) * (r + 28);
+            const ly = cy + Math.sin(rad) * (r + 28);
+            elements.push(
+              <text key={`label-${i}`} x={lx} y={ly} fontSize={16} fill="#222" textAnchor="middle" alignmentBaseline="middle" style={{fontFamily:'monospace',fontWeight:600}}>{label}</text>
+            );
+          });
+          // Draw degree ticks every 30° (rotated 90° counterclockwise)
+          for (let deg = 0; deg < 360; deg += 30) {
+            const rad = (deg - 90) * Math.PI / 180;
+            const x1 = cx + Math.cos(rad) * (r - 8);
+            const y1 = cy + Math.sin(rad) * (r - 8);
+            const x2 = cx + Math.cos(rad) * (r + 8);
+            const y2 = cy + Math.sin(rad) * (r + 8);
+            elements.push(
+              <line key={`tick-${deg}`} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#aaa" strokeWidth={1} />
+            );
+            // Degree label
+            const lx = cx + Math.cos(rad) * (r + 36);
+            const ly = cy + Math.sin(rad) * (r + 36);
+            elements.push(
+              <text key={`deg-${deg}`} x={lx} y={ly} fontSize={13} fill="#555" textAnchor="middle" alignmentBaseline="middle" style={{fontFamily:'monospace'}}>{deg}°</text>
+            );
+          }
+          // Draw quarter numbers (1-4) on the reference circle
+          const quarterLabels = [
+            { n: 1, angle: 45 },   // Top-right
+            { n: 2, angle: 135 },  // Bottom-right
+            { n: 3, angle: 225 },  // Bottom-left
+            { n: 4, angle: 315 }   // Top-left
+          ];
+          quarterLabels.forEach(({ n, angle }) => {
+            const rad = (angle - 90) * Math.PI / 180;
+            const qx = cx + Math.cos(rad) * (r * 0.65);
+            const qy = cy + Math.sin(rad) * (r * 0.65);
+            elements.push(
+              <text key={`qnum-${n}`} x={qx} y={qy} fontSize={32} fill="#c22" textAnchor="middle" alignmentBaseline="middle" style={{fontFamily:'monospace',fontWeight:700,opacity:0.45}}>{n}</text>
+            );
+          });
+          return elements;
+        })()}
+      </g>
       {/* Wind indicator overlay (top right corner) */}
       <g style={{ pointerEvents: 'none' }}>
-        <foreignObject x={width - 150 - 18} y={18} width={150} height={70} style={{ pointerEvents: 'none' }}>
+        <foreignObject x={width - 150 - 18} y={18} width={150} height={110} style={{ pointerEvents: 'none' }}>
           <div style={{
             width: 150,
-            height: 70,
+            height: 110,
             background: 'rgba(255,255,255,0.82)',
             borderRadius: 12,
             boxShadow: '0 2px 8px #0002',
@@ -700,11 +861,10 @@ export default function GrassField(props) {
             userSelect: 'none',
           }}>
             <span style={{ fontSize: 13, color: '#456', fontWeight: 600, marginBottom: 2 }}>Wind Direction</span>
-            <svg width="44" height="44" style={{ display: 'block', margin: 0 }}>
-              {/* Draw wind direction arrow */}
-              <g transform={`translate(22,22)`}>
-                {/* Draw fixed top half arc */}
-                <path d={describeArc(0, 0, 18, 180, 0)} fill="#b3e6ff88" stroke="#5bc0f7" strokeWidth="2" />
+            <svg width="60" height="60" style={{ display: 'block', margin: 0 }}>
+              <g transform="translate(30,30)">
+                {/* Draw allowed tip region arc (debug, mini) */}
+                <path d={describeArc(0, 0, 22, windLeft ? 180 : -90, windLeft ? -90 : 0)} fill="none" stroke="#000" strokeWidth="2" opacity="0.22" strokeDasharray="3 3" />
                 {/* Draw wind direction arrow */}
                 <g transform={`rotate(${((windAngle * 180 / Math.PI) - 90).toFixed(1)})`}>
                   <line x1="0" y1="0" x2="0" y2="-16" stroke="#1a7ed6" strokeWidth="3" strokeLinecap="round" />
@@ -727,7 +887,7 @@ export default function GrassField(props) {
           const elements = [];
           for (let y = 0; y < rows; y++) {
             for (let x = 0; x < cols; x++) {
-              // Use same wind field logic as grass
+              // Wind vector: always points TO the direction (right or left)
               const px = x * cellSize + cellSize / 2;
               const py = y * cellSize + cellSize / 2;
               const windFieldX = px / 80 + Math.cos(windAngle) * windT;
@@ -760,7 +920,8 @@ function describeArc(cx, cy, r, startAngle, endAngle) {
   // Angles in degrees
   const start = polarToCartesian(cx, cy, r, endAngle);
   const end = polarToCartesian(cx, cy, r, startAngle);
-  const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+  // Use absolute difference for largeArcFlag to handle negative/reversed arcs correctly
+  const largeArcFlag = Math.abs(endAngle - startAngle) <= 180 ? "0" : "1";
   return [
     "M", cx, cy,
     "L", start.x, start.y,
