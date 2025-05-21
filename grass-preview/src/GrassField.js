@@ -98,6 +98,42 @@ function CustomSlider({ label, value, setValue, min, max, step = 1, description 
   );
 }
 
+// --- Gamepad/Game Controller Hook ---
+function useGamepadLogger(onLog) {
+  React.useEffect(() => {
+    let animationId;
+    function pollGamepads() {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (gp) {
+          // Log buttons and axes
+          const pressed = gp.buttons.map((b, idx) => b.pressed ? idx : null).filter(v => v !== null);
+          if (pressed.length > 0 || gp.axes.some(a => Math.abs(a) > 0.1)) {
+            const log = {
+              id: gp.id,
+              buttons: pressed,
+              axes: gp.axes.map(a => a.toFixed(2)),
+              timestamp: Date.now(),
+              index: i
+            };
+            if (onLog) onLog(log);
+          }
+        }
+      }
+      animationId = requestAnimationFrame(pollGamepads);
+    }
+    window.addEventListener('gamepadconnected', pollGamepads);
+    window.addEventListener('gamepaddisconnected', pollGamepads);
+    pollGamepads();
+    return () => {
+      window.removeEventListener('gamepadconnected', pollGamepads);
+      window.removeEventListener('gamepaddisconnected', pollGamepads);
+      if (animationId) cancelAnimationFrame(animationId);
+    };
+  }, [onLog]);
+}
+
 // --- Models ---
 class GrassBlade {
   constructor({ baseX, baseY, bladeLen, windAngle, windStrength, color, bladeWidth, baseWidthMultiplier }) {
@@ -275,6 +311,22 @@ class TreeBranch {
 }
 
 export default function GrassField(props) {
+  // Gamepad log state
+  const [gamepadLogs, setGamepadLogs] = React.useState([]);
+  // Add new logs, keep only last 8
+  const handleGamepadLog = React.useCallback((log) => {
+    setGamepadLogs(logs => {
+      const next = [...logs, log];
+      // Only keep last 8 logs, and only most recent per gamepad index
+      const byIndex = {};
+      for (let l of next.reverse()) {
+        if (!byIndex[l.index]) byIndex[l.index] = l;
+      }
+      return Object.values(byIndex).slice(0, 8).reverse();
+    });
+  }, []);
+  useGamepadLogger(handleGamepadLog);
+
   // Inject global style to prevent all scrolling and overflow
   React.useEffect(() => {
     const style = document.createElement('style');
@@ -896,6 +948,39 @@ export default function GrassField(props) {
           }
           return elements;
         })()}
+      </g>
+      {/* Gamepad log overlay (top left) */}
+      <g style={{ pointerEvents: 'none' }}>
+        <foreignObject x={18} y={18} width={320} height={160} style={{ pointerEvents: 'none' }}>
+          <div style={{
+            width: 300,
+            minHeight: 40,
+            background: 'rgba(0,0,0,0.68)',
+            borderRadius: 10,
+            boxShadow: '0 2px 8px #0004',
+            border: '1px solid #333',
+            color: '#fff',
+            fontFamily: 'monospace',
+            fontSize: 14,
+            padding: '8px 14px',
+            marginBottom: 0,
+            pointerEvents: 'none',
+            userSelect: 'none',
+            opacity: 0.98,
+            maxHeight: 140,
+            overflowY: 'auto',
+          }}>
+            <div style={{fontWeight:700,marginBottom:2,fontSize:15}}>Gamepad Input</div>
+            {gamepadLogs.length === 0 && <div style={{color:'#ccc'}}>No input detected</div>}
+            {gamepadLogs.map((log, idx) => (
+              <div key={log.timestamp + '-' + log.index} style={{marginBottom:2}}>
+                <span style={{color:'#7ad'}}>[{log.id || 'Gamepad'}]</span> 
+                <span style={{color:'#fd7'}}>Buttons:</span> {log.buttons.length ? log.buttons.join(', ') : 'none'} 
+                <span style={{color:'#7f7'}}>Axes:</span> {log.axes.join(', ')}
+              </div>
+            ))}
+          </div>
+        </foreignObject>
       </g>
     </svg>
   );
