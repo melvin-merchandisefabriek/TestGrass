@@ -98,7 +98,8 @@ function CustomSlider({ label, value, setValue, min, max, step = 1, description 
   );
 }
 
-// --- Gamepad/Game Controller Hook ---
+// --- Gamepad/Game Controller Hook --- [COMMENTED OUT]
+/*
 function useGamepadLogger(onLog) {
   React.useEffect(() => {
     let animationId;
@@ -133,6 +134,7 @@ function useGamepadLogger(onLog) {
     };
   }, [onLog]);
 }
+*/
 
 // --- Models ---
 class GrassBlade {
@@ -284,15 +286,20 @@ class TreeBranch {
           const t = nBranches === 1 ? 0.5 : i / (nBranches - 1);
           const spread = treeBranchSpread * (1 - this.level / (treeLevels + 1));
           const randBase = this.level * 1000 + i;
-          const branchAng = this.angle - spread / 2 + t * spread + (this.pseudoRandom(randBase + 1) - 0.5) * 0.08;
-          const branchLen = this.length * treeBranchScale * lerp(0.85, 1.1, this.pseudoRandom(randBase + 2));
-          const branchW = this.width * lerp(0.5, 0.7, this.pseudoRandom(randBase + 3));
-          const bx = lerp(this.x, endX, lerp(0.6, 0.8, this.pseudoRandom(randBase + 4)));
-          const by = lerp(this.y, endY, lerp(0.6, 0.8, this.pseudoRandom(randBase + 5)));
+          // --- Tangent branch angle ---
+          // Compute the tangent at the tip of the parent branch (current branch)
+          // The parent tip is at (endX, endY), and the tangent is the same as this.angle
+          // All children should start at (endX, endY) and use this.angle as their base
+          const childAngle = this.angle - spread / 2 + t * spread + (this.pseudoRandom(randBase + 1) - 0.5) * 0.08;
+          const childLen = this.length * treeBranchScale * lerp(0.85, 1.1, this.pseudoRandom(randBase + 2));
+          const childW = this.width * lerp(0.5, 0.7, this.pseudoRandom(randBase + 3));
+          // Start children exactly at the tip of the parent branch
+          const childX = endX;
+          const childY = endY;
           // Defensive: check for NaN/invalid branch params
-          if (!Number.isFinite(branchAng) || !Number.isFinite(branchLen) || !Number.isFinite(branchW) || !Number.isFinite(bx) || !Number.isFinite(by)) continue;
-          if (branchLen <= 0 || branchW <= 0) continue;
-          children = children.concat(this.drawBranch(bx, by, branchAng, branchLen, branchW, this.level + 1, this.params, this.pseudoRandom, this.drawBranch, `${keyPrefix}-${i}`));
+          if (!Number.isFinite(childAngle) || !Number.isFinite(childLen) || !Number.isFinite(childW) || !Number.isFinite(childX) || !Number.isFinite(childY)) continue;
+          if (childLen <= 0 || childW <= 0) continue;
+          children = children.concat(this.drawBranch(childX, childY, childAngle, childLen, childW, this.level + 1, this.params, this.pseudoRandom, this.drawBranch));
         }
       }
       return [path, ...children];
@@ -311,7 +318,8 @@ class TreeBranch {
 }
 
 export default function GrassField(props) {
-  // Gamepad log state
+  // Gamepad log state [COMMENTED OUT]
+  /*
   const [gamepadLogs, setGamepadLogs] = React.useState([]);
   // Add new logs, keep only last 8
   const handleGamepadLog = React.useCallback((log) => {
@@ -326,6 +334,27 @@ export default function GrassField(props) {
     });
   }, []);
   useGamepadLogger(handleGamepadLog);
+
+  // --- Add state for thumbstick position ---
+  const [thumbstick, setThumbstick] = React.useState({ x: 0, y: 0 });
+  // Listen for left thumbstick movement (axes 0 and 1)
+  React.useEffect(() => {
+    function updateThumbstick() {
+      const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+      for (let i = 0; i < gamepads.length; i++) {
+        const gp = gamepads[i];
+        if (gp && gp.axes.length >= 2) {
+          // Clamp values to [-1, 1]
+          setThumbstick({ x: Math.max(-1, Math.min(1, gp.axes[0])), y: Math.max(-1, Math.min(1, gp.axes[1])) });
+          return;
+        }
+      }
+      setThumbstick({ x: 0, y: 0 });
+    }
+    const id = setInterval(updateThumbstick, 16); // ~60fps
+    return () => clearInterval(id);
+  }, []);
+  */
 
   // Inject global style to prevent all scrolling and overflow
   React.useEffect(() => {
@@ -796,13 +825,31 @@ export default function GrassField(props) {
         try {
           const baseX = width * treeBaseX;
           const baseY = getGroundY(baseX);
-          const params = { treeLevels, treeMinBranchWidth, treeBranchesPerNode, treeBranchSpread, treeBranchScale };
-          function drawBranch(x, y, angle, length, width, level, params, pseudoRandom, drawBranch, keyPrefix = '') {
-            if (!isFinite(x) || !isFinite(y) || !isFinite(angle) || !isFinite(length) || !isFinite(width) || level > (params.treeLevels || 6) + 2) return [];
-            const branch = new TreeBranch({ x, y, angle, length, width, level, params, pseudoRandom, drawBranch });
-            return branch.render(keyPrefix);
-          }
-          return drawBranch(baseX, baseY, Math.PI / 2, trunkHeight, trunkWidth, 0, params, pseudoRandom, drawBranch);
+          // Main trunk
+          const trunkAngle = Math.PI / 2;
+          const trunkLen = trunkHeight;
+          const trunkW = trunkWidth;
+          // Branch emerges at 70% up the trunk
+          const branchFrac = 0.7;
+          const branchBaseX = baseX + Math.cos(trunkAngle) * trunkLen * branchFrac;
+          const branchBaseY = baseY - Math.sin(trunkAngle) * trunkLen * branchFrac;
+          // Calculate the normal to the trunk at the branch point
+          // To make the branch emerge from the right side (for a leftward branch), use -Math.PI/2 from trunkAngle
+          const normalAngle = trunkAngle - Math.PI / 2; // right side of trunk
+          // Offset the base of the branch so it is flush with the trunk edge
+          const branchW = trunkW * 0.5;
+          const flushX = branchBaseX + Math.cos(normalAngle) * (trunkW / 2);
+          const flushY = branchBaseY - Math.sin(normalAngle) * (trunkW / 2);
+          // The base of the branch should be perpendicular to the branch direction
+          // We'll pass the branchAngle to the branch, and its base will be perpendicular
+          const trunkBranch = new TreeBranch({ x: baseX, y: baseY, angle: trunkAngle, length: trunkLen, width: trunkW, level: 0, params: {}, pseudoRandom, drawBranch: () => [] });
+          const trunkPath = trunkBranch.render('main-trunk');
+          // One branch emerging from 70% up the trunk, flush with trunk edge
+          const branchAngle = trunkAngle - Math.PI / 4; // 45 deg to the left
+          const branchLen = trunkLen * 0.7;
+          const branch = new TreeBranch({ x: flushX, y: flushY, angle: branchAngle, length: branchLen, width: branchW, level: 1, params: {}, pseudoRandom, drawBranch: () => [] });
+          const branchPath = branch.render('main-branch');
+          return [trunkPath, branchPath];
         } catch (e) {
           return null;
         }
@@ -892,6 +939,8 @@ export default function GrassField(props) {
             alignItems: 'center',
             justifyContent: 'center',
             fontFamily: 'inherit',
+            justifyContent: 'center',
+            fontFamily: 'inherit',
             fontSize: 15,
             color: '#234',
             fontWeight: 500,
@@ -949,7 +998,7 @@ export default function GrassField(props) {
           return elements;
         })()}
       </g>
-      {/* Gamepad log overlay (top left) */}
+      {/* Gamepad log overlay (top left) - COMMENTED OUT
       <g style={{ pointerEvents: 'none' }}>
         <foreignObject x={18} y={18} width={320} height={160} style={{ pointerEvents: 'none' }}>
           <div style={{
@@ -982,6 +1031,27 @@ export default function GrassField(props) {
           </div>
         </foreignObject>
       </g>
+      */}
+      {/* Gamepad thumbstick circle overlay (centered) - COMMENTED OUT
+      <g style={{ pointerEvents: 'none' }}>
+        {(() => {
+          // Map thumbstick x/y [-1,1] to screen center +/- 120px
+          const cx = width / 2 + thumbstick.x * 120;
+          const cy = height / 2 + thumbstick.y * 120;
+          return (
+            <circle
+              cx={cx}
+              cy={cy}
+              r={28}
+              fill="#888"
+              opacity={0.7}
+              stroke="#222"
+              strokeWidth={3}
+            />
+          );
+        })()}
+      </g>
+      */}
     </svg>
   );
 }
