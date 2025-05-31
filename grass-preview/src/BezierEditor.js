@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { getCollections, saveCollection, deleteCollection, generateCollectionId, instantiateWithTransform, transformPaths } from "./BezierCollections";
 
 // Default paths to use if no saved data exists
 const defaultPaths = [
@@ -40,7 +41,7 @@ const defaultPaths = [
   },
 ];
 
-export default function BezierEditor({ width = 1000, height = 700 }) {
+export default function BezierEditor({ width = 1000, height = 700, collectionMode = false }) {
   // Get saved data from localStorage or use defaults
   const getInitialPaths = () => {
     const savedPaths = localStorage.getItem('bezierEditorPaths');
@@ -81,6 +82,24 @@ export default function BezierEditor({ width = 1000, height = 700 }) {
 
   // Save state indicator
   const [saveIndicator, setSaveIndicator] = useState(false);
+  
+  // Collections mode state
+  const [collections, setCollections] = useState([]);
+  const [activeCollection, setActiveCollection] = useState(null);
+  const [collectionNameInput, setCollectionNameInput] = useState("");
+  const [collectionDescriptionInput, setCollectionDescriptionInput] = useState("");
+  const [collectionTagsInput, setCollectionTagsInput] = useState("");
+  const [transformValues, setTransformValues] = useState({
+    translateX: 0,
+    translateY: 0,
+    scaleX: 1,
+    scaleY: 1,
+    rotate: 0,
+    flipX: false,
+    flipY: false
+  });
+  const [showTransformPanel, setShowTransformPanel] = useState(false);
+  const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   
   // State for tracking selections, dragging, and path operations
   const [selectedPaths, setSelectedPaths] = useState([]);
@@ -830,6 +849,216 @@ export default function BezierEditor({ width = 1000, height = 700 }) {
     const timer = setTimeout(() => setSaveIndicator(false), 1500);
     return () => clearTimeout(timer);
   }, [loopAnimation]);
+
+  // Initialize component
+  useEffect(() => {
+    // Clean up any animationFrame on unmount
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+  
+  // Load collections when in collection mode
+  useEffect(() => {
+    if (collectionMode) {
+      const loadedCollections = getCollections();
+      setCollections(loadedCollections);
+    }
+  }, [collectionMode]);
+
+  // Handlers for showing path and control point coordinates
+  const handleShowCoordinates = (pathId) => {
+    const path = paths.find((p) => p.id === pathId);
+    if (!path) return "";
+
+    return Object.entries(path.points)
+      .map(([key, point]) => `${key}: (${Math.round(point.x)}, ${Math.round(point.y)})`)
+      .join(" | ");
+  };
+
+  // Collection management functions
+  const createNewCollection = () => {
+    // Validate input
+    if (!collectionNameInput.trim()) {
+      alert("Please provide a name for the collection");
+      return;
+    }
+    
+    // Create collection object
+    const newCollection = {
+      id: generateCollectionId(),
+      name: collectionNameInput.trim(),
+      description: collectionDescriptionInput.trim(),
+      tags: collectionTagsInput.trim().split(',').map(tag => tag.trim()).filter(tag => tag),
+      paths: JSON.parse(JSON.stringify(paths)),
+      groups: JSON.parse(JSON.stringify(groups)),
+      createdAt: new Date().toISOString()
+    };
+    
+    // Save to localStorage
+    const success = saveCollection(newCollection);
+    
+    if (success) {
+      // Update local state
+      setCollections(prev => [...prev, newCollection]);
+      
+      // Clear inputs
+      setCollectionNameInput("");
+      setCollectionDescriptionInput("");
+      setCollectionTagsInput("");
+      
+      // Show save indicator
+      setSaveIndicator(true);
+      setTimeout(() => setSaveIndicator(false), 2000);
+    } else {
+      alert("Error saving collection. Please try again.");
+    }
+  };
+  
+  const deleteSelectedCollection = () => {
+    if (!selectedCollectionId) return;
+    
+    if (window.confirm(`Are you sure you want to delete this collection?`)) {
+      const success = deleteCollection(selectedCollectionId);
+      
+      if (success) {
+        // Update local state
+        setCollections(prev => prev.filter(c => c.id !== selectedCollectionId));
+        setSelectedCollectionId(null);
+        
+        if (activeCollection && activeCollection.id === selectedCollectionId) {
+          setActiveCollection(null);
+        }
+      } else {
+        alert("Error deleting collection. Please try again.");
+      }
+    }
+  };
+  
+  const loadCollectionForEditing = (collectionId) => {
+    const collection = collections.find(c => c.id === collectionId);
+    if (collection) {
+      // Load paths and groups from collection
+      setPaths(JSON.parse(JSON.stringify(collection.paths)));
+      setGroups(JSON.parse(JSON.stringify(collection.groups || [])));
+      
+      // Update UI state
+      setSelectedCollectionId(collectionId);
+      setActiveCollection(collection);
+      setCollectionNameInput(collection.name);
+      setCollectionDescriptionInput(collection.description || '');
+      setCollectionTagsInput((collection.tags || []).join(', '));
+    }
+  };
+  
+  const updateCurrentCollection = () => {
+    if (!activeCollection) return;
+    
+    // Validate input
+    if (!collectionNameInput.trim()) {
+      alert("Please provide a name for the collection");
+      return;
+    }
+    
+    // Update collection object
+    const updatedCollection = {
+      ...activeCollection,
+      name: collectionNameInput.trim(),
+      description: collectionDescriptionInput.trim(),
+      tags: collectionTagsInput.trim().split(',').map(tag => tag.trim()).filter(tag => tag),
+      paths: JSON.parse(JSON.stringify(paths)),
+      groups: JSON.parse(JSON.stringify(groups)),
+      lastModified: new Date().toISOString()
+    };
+    
+    // Save to localStorage
+    const success = saveCollection(updatedCollection);
+    
+    if (success) {
+      // Update local state
+      setCollections(prev => prev.map(c => 
+        c.id === updatedCollection.id ? updatedCollection : c
+      ));
+      setActiveCollection(updatedCollection);
+      
+      // Show save indicator
+      setSaveIndicator(true);
+      setTimeout(() => setSaveIndicator(false), 2000);
+    } else {
+      alert("Error updating collection. Please try again.");
+    }
+  };
+  
+  const instantiateCollection = (collectionId) => {
+    const collection = collections.find(c => c.id === collectionId);
+    if (!collection) return;
+    
+    // Create transformation object from current values
+    const transformation = {
+      translate: { x: transformValues.translateX, y: transformValues.translateY },
+      scale: { x: transformValues.scaleX, y: transformValues.scaleY },
+      rotate: transformValues.rotate,
+      flipX: transformValues.flipX,
+      flipY: transformValues.flipY
+    };
+    
+    // Create a new transformed instance
+    const transformedCollection = instantiateWithTransform(collection, transformation);
+    
+    // Save the new instance
+    const success = saveCollection(transformedCollection);
+    
+    if (success) {
+      // Update local state
+      setCollections(prev => [...prev, transformedCollection]);
+      setSelectedCollectionId(transformedCollection.id);
+      
+      // Show save indicator
+      setSaveIndicator(true);
+      setTimeout(() => setSaveIndicator(false), 2000);
+      
+      // Switch to the new collection
+      loadCollectionForEditing(transformedCollection.id);
+    } else {
+      alert("Error creating transformed collection. Please try again.");
+    }
+  };
+  
+  const previewTransformation = () => {
+    if (!selectedCollectionId) return;
+    
+    const collection = collections.find(c => c.id === selectedCollectionId);
+    if (!collection) return;
+    
+    // Create transformation object from current values
+    const transformation = {
+      translate: { x: transformValues.translateX, y: transformValues.translateY },
+      scale: { x: transformValues.scaleX, y: transformValues.scaleY },
+      rotate: transformValues.rotate,
+      flipX: transformValues.flipX,
+      flipY: transformValues.flipY
+    };
+    
+    // Apply transformation to paths without saving
+    const transformedPaths = transformPaths(collection.paths, transformation);
+    
+    // Update UI to show transformed paths
+    setPaths(transformedPaths);
+  };
+  
+  const resetTransformValues = () => {
+    setTransformValues({
+      translateX: 0,
+      translateY: 0,
+      scaleX: 1,
+      scaleY: 1,
+      rotate: 0,
+      flipX: false,
+      flipY: false
+    });
+  };
 
   // Generate SVG path string for a path
   const getPathString = (path) => {

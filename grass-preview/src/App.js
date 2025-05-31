@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import GrassField from "./GrassField";
 import BezierEditor from "./BezierEditor";
+import BlankCanvas from "./BlankCanvas";
 
 function App() {
   const [activeComponent, setActiveComponent] = useState("bezierEditor");
+  
+  // App component initialization
   return (
-    <div style={{ padding: 0, minHeight: "100vh", background: "#f5f5f5" }}>
+    <div style={{ 
+      padding: 0, 
+      minHeight: "100vh", 
+      background: "#f5f5f5",
+      overflow: "auto"
+    }}>
       <div
         style={{
           position: "fixed",
@@ -50,16 +58,39 @@ function App() {
             fontWeight: 600,
             fontSize: 16,
             cursor: "pointer",
+            marginRight: 10,
           }}
         >
           Bezier Editor
         </button>
+        <button
+          onClick={() => setActiveComponent("blankCanvas")}
+          style={{
+            padding: "8px 18px",
+            background:
+              activeComponent === "blankCanvas" ? "#4CAF50" : "#444",
+            color: "#fff",
+            border: "none",
+            borderRadius: 4,
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          Blank Canvas
+        </button>
       </div>
-      <div style={{ paddingTop: 56 }}>
+      <div style={{ 
+        paddingTop: 56,
+        height: "auto",
+        position: "static"
+      }}>
         {activeComponent === "grassField" ? (
           <GrassField width={1000} height={700} bladeCount={40} />
-        ) : (
+        ) : activeComponent === "bezierEditor" ? (
           <BezierEditor width={1000} height={700} />
+        ) : (
+          <BlankCanvas width={1000} height={700} />
         )}
       </div>
     </div>
