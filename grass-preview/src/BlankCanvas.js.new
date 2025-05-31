@@ -1,0 +1,173 @@
+// filepath: /workspaces/TestGrass/grass-preview/src/BlankCanvas.js
+import React, { Component } from 'react';
+import Triangle from './components/Triangle';
+import Path from './components/Path';
+import AnimationController from './controllers/AnimationController';
+import KeyboardController from './controllers/KeyboardController';
+import MouseController from './controllers/MouseController';
+import { Constants } from './utils/Utils';
+
+/**
+ * BlankCanvas component implemented as a class-based React component
+ * that composes functionality from several specialized classes.
+ */
+class BlankCanvas extends Component {
+    constructor(props) {
+        super(props);
+        
+        // Dimensions with default values
+        this.width = props.width || 1000;
+        this.height = props.height || 700;
+        
+        // State initialization
+        this.state = {
+            circleX: this.width / 2,
+            mousePosition: { x: 0, y: 0 },
+            isMouseDown: false,
+            circleRadius: Constants.MOUSE_CIRCLE_RADIUS,
+            tempPaths: []
+        };
+        
+        // Create the fixed triangle
+        this.triangle = new Triangle(10, 10, 6, 10, 50);
+        
+        // Reference to controllers (will be initialized in componentDidMount)
+        this.keyboardController = null;
+        this.mouseController = null;
+        this.animationController = null;
+    }
+    
+    componentDidMount() {
+        // Initialize the keyboard controller
+        this.keyboardController = new KeyboardController(
+            Constants.MOVE_SPEED,
+            Constants.ACCELERATION_RATE,
+            Constants.CIRCLE_RADIUS,
+            this.width - Constants.CIRCLE_RADIUS,
+            this.handleCircleXChange
+        );
+        this.keyboardController.init(this.state.circleX);
+        
+        // Initialize the mouse controller
+        this.mouseController = new MouseController(
+            this.width,
+            this.height,
+            this.handleMousePositionChange,
+            this.handleMouseStateChange,
+            this.handleCircleRadiusChange,
+            this.handlePathCreation
+        );
+        this.mouseController.init();
+        
+        // Initialize the animation controller
+        this.animationController = new AnimationController();
+        this.animationController.setPathUpdateCallback(this.handlePathsUpdated);
+    }
+    
+    componentWillUnmount() {
+        // Clean up controllers
+        if (this.keyboardController) {
+            this.keyboardController.dispose();
+        }
+        
+        if (this.mouseController) {
+            this.mouseController.dispose();
+        }
+        
+        if (this.animationController) {
+            this.animationController.dispose();
+        }
+    }
+    
+    // Handler for circle X position changes
+    handleCircleXChange = (x) => {
+        this.setState({ circleX: x });
+    };
+    
+    // Handler for mouse position changes
+    handleMousePositionChange = (position) => {
+        this.setState({ mousePosition: position });
+    };
+    
+    // Handler for mouse state changes (down/up)
+    handleMouseStateChange = (isDown) => {
+        this.setState({ isMouseDown: isDown });
+    };
+    
+    // Handler for circle radius changes
+    handleCircleRadiusChange = (radius) => {
+        this.setState({ circleRadius: radius });
+    };
+    
+    // Handler for path creation
+    handlePathCreation = (startX, startY, endX, endY, radius) => {
+        // Create a new path
+        const path = new Path(startX, startY, endX, endY, radius);
+        
+        // Add it to the animation controller
+        this.animationController.addPath(path);
+    };
+    
+    // Handler for paths updated from animation controller
+    handlePathsUpdated = (paths) => {
+        this.setState({ tempPaths: paths });
+    };
+    
+    render() {
+        const { circleX, mousePosition, circleRadius, tempPaths } = this.state;
+        
+        return (
+            <div style={{ 
+                display: "flex", 
+                justifyContent: "center", 
+                alignItems: "center",
+                paddingTop: 20,
+                width: "100%"
+            }}>
+                <svg
+                    width={this.width}
+                    height={this.height}
+                    style={{
+                        background: "#3498db",
+                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                        borderRadius: 4,
+                        cursor: "none", // Hide the cursor
+                    }}
+                >
+                    {/* Original keyboard-controlled circle */}
+                    <circle
+                        cx={circleX}
+                        cy={this.height / 1.2}
+                        r={Constants.CIRCLE_RADIUS}
+                        fill="#fff"
+                        stroke="none"
+                        strokeWidth={5}
+                    />
+                    
+                    {/* Mouse follower circle */}
+                    <circle
+                        cx={mousePosition.x}
+                        cy={mousePosition.y}
+                        r={circleRadius}
+                        fill="none"
+                        stroke="#fff"
+                        strokeWidth={3 * circleRadius / Constants.MOUSE_CIRCLE_RADIUS + 1}
+                        opacity={0.5 / (circleRadius / Constants.MOUSE_CIRCLE_RADIUS * 2)}
+                    />
+
+                    {/* Fixed triangle */}
+                    {this.triangle.render({
+                        fill: "#999999",
+                        stroke: "#fff",
+                        strokeWidth: 1
+                    })}
+
+                    {/* Animated paths with triangles */}
+                    {tempPaths.map(path => path.render())}
+                </svg>
+            </div>
+        );
+    }
+}
+
+export default BlankCanvas;
