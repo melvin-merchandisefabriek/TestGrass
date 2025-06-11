@@ -26,17 +26,11 @@ class BlankCanvas extends Component {
             isMouseDown: false,
             circleRadius: Constants.MOUSE_CIRCLE_RADIUS,
             tempPaths: [],
-            redSpheres: []
+            redSpheres: [],
+            importedShapes: [],
+            selectedShapeIndex: null,
+            isLoadingShapes: false
         };
-        
-        // Create the fixed triangle
-        this.triangle = new Triangle(
-            Constants.FIXED_TRIANGLE_X, 
-            Constants.FIXED_TRIANGLE_Y, 
-            Constants.TRIANGLE_WIDTH, 
-            Constants.TRIANGLE_HEIGHT, 
-            Constants.FIXED_TRIANGLE_ROTATION
-        );
         
         // Reference to controllers (will be initialized in componentDidMount)
         this.keyboardController = null;
@@ -81,15 +75,29 @@ class BlankCanvas extends Component {
             this.handleRedSpheresUpdated
         );
         this.redSphereController.init();
-        this.redSphereController.updateTargetPosition(this.state.circleX);
+        this.redSphereController.updateTargetPosition(this.state.circleX, this.height / 1.2);
+        
+        // Force spawn multiple red spheres immediately to test movement
+        setTimeout(() => {
+            // Force spawn 10 spheres at startup around the edges
+            for (let i = 0; i < 10; i++) {
+                this.redSphereController.spawnRedSphere();
+            }
+            console.log("Forced spawn of 10 SimpleRedSpheres to test movement");
+            
+            // Set an interval to spawn new spheres every 2 seconds
+            setInterval(() => {
+                if (this.redSphereController.getSpheres().length < 15) {
+                    this.redSphereController.spawnRedSphere();
+                }
+            }, 2000);
+        }, 1000);
     }
     
     componentDidUpdate(prevProps, prevState) {
         // Check for collisions between the keyboard circle and any red spheres
-        if (this.redSphereController && 
-           (prevState.circleX !== this.state.circleX || 
-            prevState.redSpheres.length !== this.state.redSpheres.length)) {
-            
+        // Always check regardless of whether the circle has moved
+        if (this.redSphereController) {
             const collision = this.redSphereController.checkCollisions(
                 this.state.circleX,
                 this.height / 1.2, // Y position of the keyboard circle
@@ -132,7 +140,11 @@ class BlankCanvas extends Component {
         
         // Update the RedSphereController with the new target position
         if (this.redSphereController) {
-            this.redSphereController.updateTargetPosition(x);
+            const targetY = this.height / 1.2; // Fixed Y position of keyboard circle
+            this.redSphereController.updateTargetPosition(x, targetY);
+            
+            // Log the target update for debugging
+            console.log(`BlankCanvas: Updated sphere target to (${x.toFixed(0)}, ${targetY.toFixed(0)})`);
         }
     };
     
@@ -153,14 +165,29 @@ class BlankCanvas extends Component {
     
     // Handler for path creation
     handlePathCreation = (startX, startY, endX, endY, radius) => {
+        const { importedShapes, selectedShapeIndex } = this.state;
         
-        // Create a new path
+        // If a shape is selected, use it for the projectile
+        if (importedShapes.length > 0 && selectedShapeIndex !== null) {
+            const selectedShape = importedShapes[selectedShapeIndex];
+            
+            if (selectedShape && selectedShape.paths) {
+                // Create a single path using the shape data
+                const path = new Path(startX, startY, endX, endY, radius);
+                
+                // Attach the shape data to the path for rendering
+                path.customShape = selectedShape;
+                
+                // Add it to the animation controller
+                this.animationController.addPath(path);
+                this.forceUpdate();
+                return;
+            }
+        }
+        
+        // If no shape is selected or there was an issue, fall back to default behavior
         const path = new Path(startX, startY, endX, endY, radius);
-        
-        // Add it to the animation controller
         this.animationController.addPath(path);
-        
-        // Force a re-render to show the new path
         this.forceUpdate();
     };
     
@@ -176,14 +203,14 @@ class BlankCanvas extends Component {
     
     // Handler for sphere collisions
     handleSphereCollision = () => {
-        // Create 8 paths in a circle pattern to create a "burst" effect
-        const numberOfPaths = 8;
+        // Create 12 paths in a circle pattern to create a more visible "burst" effect
+        const numberOfPaths = 12;
         const startX = this.state.circleX;
         const startY = this.height / 1.2; // Y position of the keyboard circle
         
         for (let i = 0; i < numberOfPaths; i++) {
             const angle = (i / numberOfPaths) * Math.PI * 2;
-            const distance = 80 + Math.random() * 40; // Random distance between 80-120
+            const distance = 100 + Math.random() * 60; // Increased random distance between 100-160
             
             const endX = startX + Math.cos(angle) * distance;
             const endY = startY + Math.sin(angle) * distance;
@@ -227,8 +254,8 @@ class BlankCanvas extends Component {
                     {/* SVG Filters */}
                     <defs>
                         <filter id="redGlow" x="-50%" y="-50%" width="200%" height="200%">
-                            <feGaussianBlur stdDeviation="5" result="blur" />
-                            <feFlood floodColor="#ff0000" floodOpacity="0.7" result="glow" />
+                            <feGaussianBlur stdDeviation="10" result="blur" />
+                            <feFlood floodColor="white" floodOpacity="1" result="glow" />
                             <feComposite in="glow" in2="blur" operator="in" result="coloredBlur" />
                             <feMerge>
                                 <feMergeNode in="coloredBlur" />

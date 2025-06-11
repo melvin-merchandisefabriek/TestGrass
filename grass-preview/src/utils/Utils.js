@@ -21,7 +21,7 @@
  * - Higher values = faster transition (e.g. 0.9 = very fast)
  * - Value of 1.0 = instant transition
  */
-export const interpolateByHalvingOrDoubling = (current, target, speed = 0.5, tolerance = 0.1) => {
+export const interpolateByHalvingOrDoubling = (current, target, speed = 0.01, tolerance = 0.1) => {
     // If we're already close enough to the target, return the target
     if (Math.abs(current - target) < tolerance) {
         return target;
@@ -113,10 +113,10 @@ export const Constants = {
     // Red Sphere properties
     RED_SPHERE_RADIUS: 20,              // Radius of the red floating sphere
     RED_SPHERE_FILL: "#ff3333",         // Fill color for the red sphere
-    RED_SPHERE_BASE_SPEED: 0.8,         // Base speed of the red sphere
-    RED_SPHERE_FLOAT_AMPLITUDE: 30,     // Amplitude of the floating motion
+    RED_SPHERE_BASE_SPEED: 5.0,         // Base speed of the red sphere (significantly increased)
+    RED_SPHERE_FLOAT_AMPLITUDE: 0,      // Amplitude of the floating motion (removed completely)
     RED_SPHERE_FLOAT_SPEED: 1.5,        // Speed of the floating motion
-    RED_SPHERE_LIFETIME: 15000,         // Lifetime of the red sphere in ms
-    RED_SPHERE_SPAWN_CHANCE: 0.005,     // Chance per frame to spawn a new red sphere
-    RED_SPHERE_MAX_COUNT: 3,            // Maximum number of red spheres at once
+    RED_SPHERE_LIFETIME: 20000,         // Lifetime of the red sphere in ms (increased)
+    RED_SPHERE_SPAWN_CHANCE: 0.01,      // Chance per frame to spawn a new red sphere (increased)
+    RED_SPHERE_MAX_COUNT: 15,           // Maximum number of red spheres at once (increased)
 };

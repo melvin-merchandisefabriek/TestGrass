@@ -10,8 +10,9 @@ class RedSphere {
      * @param {number} width - Canvas width
      * @param {number} height - Canvas height
      * @param {number} targetX - X position of target (keyboard circle)
+     * @param {number} targetY - Y position of target (keyboard circle)
      */
-    constructor(width, height, targetX) {
+    constructor(width, height, targetX, targetY) {
         this.id = Date.now() + Math.random().toString(36).substr(2, 9);
         
         // Generate random starting position on the edge of the canvas
@@ -19,6 +20,7 @@ class RedSphere {
         
         this.radius = Constants.RED_SPHERE_RADIUS;
         this.targetX = targetX;
+        this.targetY = targetY || height / 1.2; // Default Y position if not provided
         this.speedX = Constants.RED_SPHERE_BASE_SPEED * (Math.random() * 0.5 + 0.75); // Random speed variation
         this.speedY = Constants.RED_SPHERE_BASE_SPEED * (Math.random() * 0.5 + 0.75);
         this.floatAmplitude = Constants.RED_SPHERE_FLOAT_AMPLITUDE * (Math.random() + 0.5); // Random float amplitude
@@ -70,11 +72,12 @@ class RedSphere {
      * Update the sphere position and state
      * @param {number} now - Current timestamp
      * @param {number} targetX - Current X position of keyboard circle
+     * @param {number} targetY - Current Y position of keyboard circle
      * @param {number} width - Canvas width
      * @param {number} height - Canvas height
      * @returns {boolean} True if sphere is still active, false if it should be removed
      */
-    update(now, targetX, width, height) {
+    update(now, targetX, targetY, width, height) {
         const age = now - this.timeCreated;
         
         // Fade in animation
@@ -89,30 +92,31 @@ class RedSphere {
             return false;
         }
         
-        // Update target X position
+        // Update target position
         this.targetX = targetX;
+        this.targetY = targetY;
+        
+        // Debug logging for troubleshooting (will log every 300th frame to avoid console spam)
+        if (Math.random() < 0.003) {
+            console.log(`Red Sphere targeting: X=${targetX}, Y=${targetY}, currently at: X=${this.realX.toFixed(2)}, Y=${this.realY.toFixed(2)}`);
+        }
         
         // Calculate direction to target
-        const targetY = height / 1.2; // Same Y level as keyboard circle
         const dx = this.targetX - this.realX;
-        const dy = targetY - this.realY;
+        const dy = this.targetY - this.realY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         // Normalize direction
         const dirX = distance > 0 ? dx / distance : 0;
         const dirY = distance > 0 ? dy / distance : 0;
         
-        // Move towards target
-        this.realX += dirX * this.speedX;
-        this.realY += dirY * this.speedY;
+        // Move towards target with much higher speed for very obvious movement
+        this.realX += dirX * this.speedX * 6.0; // Multiplied by 6 for extremely visible movement
+        this.realY += dirY * this.speedY * 6.0; // Multiplied by 6 for extremely visible movement
         
-        // Apply floating motion using sine wave
-        const floatOffsetX = Math.sin((now / 1000) * this.floatSpeed + this.floatOffset) * this.floatAmplitude;
-        const floatOffsetY = Math.cos((now / 1000) * this.floatSpeed + this.floatOffset * 0.7) * this.floatAmplitude;
-        
-        // Update visible position
-        this.x = this.realX + floatOffsetX;
-        this.y = this.realY + floatOffsetY;
+        // COMPLETELY REMOVE floating motion - direct positioning only
+        this.x = this.realX;
+        this.y = this.realY;
         
         return true;
     }
@@ -137,16 +141,38 @@ class RedSphere {
      * @returns {Object} SVG element
      */
     getElement() {
+        // Calculate vector to target for direction indicator
+        const dx = this.targetX - this.x;
+        const dy = this.targetY - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const dirX = dist > 0 ? dx / dist : 0;
+        const dirY = dist > 0 ? dy / dist : 0;
+        const lineLength = this.radius * 1.5; // Length of direction indicator
+        
         return (
-            <circle
-                key={`redsphere-${this.id}`}
-                cx={this.x}
-                cy={this.y}
-                r={this.radius}
-                fill={Constants.RED_SPHERE_FILL}
-                opacity={this.opacity}
-                filter="url(#redGlow)"
-            />
+            <g key={`redsphere-group-${this.id}`}>
+                {/* Main red sphere */}
+                <circle
+                    key={`redsphere-${this.id}`}
+                    cx={this.x}
+                    cy={this.y}
+                    r={this.radius}
+                    fill={Constants.RED_SPHERE_FILL}
+                    opacity={this.opacity}
+                    filter="url(#redGlow)"
+                />
+                
+                {/* Direction indicator line pointing toward target */}
+                <line
+                    x1={this.x}
+                    y1={this.y}
+                    x2={this.x + dirX * lineLength}
+                    y2={this.y + dirY * lineLength}
+                    stroke="yellow"
+                    strokeWidth="3"
+                    opacity={this.opacity * 0.8}
+                />
+            </g>
         );
     }
 }

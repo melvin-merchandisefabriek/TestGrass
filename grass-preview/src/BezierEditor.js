@@ -672,6 +672,75 @@ export default function BezierEditor({ width = 1000, height = 700, collectionMod
     URL.revokeObjectURL(url);
   };
 
+  // Export SVG as JSON and save to server
+  const exportAsJsonToServer = async () => {
+    // Generate a name for the shape
+    let shapeName = prompt("Enter a name for this shape:", "MyShape" + Math.floor(Math.random() * 1000));
+    
+    if (!shapeName) {
+      return; // User cancelled the prompt
+    }
+    
+    // Create SVG data
+    const svgContent = `
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      width="${width}" 
+      height="${height}" 
+      viewBox="0 0 ${width} ${height}"
+    >
+      <!-- Full shape with fill -->
+      <path 
+        d="${fullPathString}" 
+        fill="rgba(120, 200, 255, 0.13)" 
+        stroke="#333" 
+        stroke-width="2.5" 
+        stroke-linejoin="round"
+      />
+      
+      <!-- Individual paths -->
+      ${paths.map(path => `
+      <path 
+        d="${getPathString(path)}" 
+        fill="none" 
+        stroke="${getPathColor(path)}" 
+        stroke-width="2" 
+        stroke-linejoin="round" 
+      />
+      `).join('')}
+    </svg>
+    `;
+    
+    // Create the shape data to send to the server
+    const shapeData = {
+      name: shapeName,
+      paths: JSON.parse(JSON.stringify(paths)), // Deep clone paths
+      svgData: svgContent
+    };
+    
+    try {
+      // Send the shape data to the server
+      const response = await fetch('http://localhost:5000/api/shapes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(shapeData)
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Shape saved successfully: ${result.message}`);
+      } else {
+        const errorData = await response.json();
+        alert(`Error saving shape: ${errorData.error}`);
+      }
+    } catch (error) {
+      console.error('Error saving shape to server:', error);
+      alert(`Error saving shape: ${error.message}`);
+    }
+  };
+
   // Handle mouse down on control points
   const handleMouseDown = (pathId, pointKey) => (e) => {
     e.preventDefault();
@@ -1558,23 +1627,9 @@ export default function BezierEditor({ width = 1000, height = 700, collectionMod
           </button>
           
           <button
-            onClick={resetEditor}
+            onClick={exportAsSVG}
             style={{
               marginRight: 12,
-              padding: "6px 12px",
-              background: "#e74c3c",
-              border: "none",
-              color: "white",
-              borderRadius: 4,
-              fontSize: 14
-            }}
-          >
-            Reset
-          </button>
-          
-          <button
-            onClick={addPath}
-            style={{
               padding: "6px 12px",
               background: "#3498db",
               border: "none",
@@ -1583,7 +1638,22 @@ export default function BezierEditor({ width = 1000, height = 700, collectionMod
               fontSize: 14
             }}
           >
-            Add Path
+            Export as SVG
+          </button>
+
+          <button
+            onClick={exportAsJsonToServer}
+            style={{
+              marginRight: 12,
+              padding: "6px 12px",
+              background: "#16a085",
+              border: "none",
+              color: "white",
+              borderRadius: 4,
+              fontSize: 14
+            }}
+          >
+            Save to Server
           </button>
         </div>
       </div>
