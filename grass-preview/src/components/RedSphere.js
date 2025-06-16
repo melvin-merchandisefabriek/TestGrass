@@ -150,27 +150,16 @@ class RedSphere {
         const lineLength = this.radius * 1.5; // Length of direction indicator
         
         return (
-            <g key={`redsphere-group-${this.id}`}>
-                {/* Main red sphere */}
+            <g key={`sphere-group-${this.id}`}>
+                {/* Main sphere (simplified with no indicators) */}
                 <circle
-                    key={`redsphere-${this.id}`}
+                    key={`sphere-${this.id}`}
                     cx={this.x}
                     cy={this.y}
                     r={this.radius}
-                    fill={Constants.RED_SPHERE_FILL}
+                    fill={Constants.RED_SPHERE_FILL} /* Using gray from Constants */
                     opacity={this.opacity}
-                    filter="url(#redGlow)"
-                />
-                
-                {/* Direction indicator line pointing toward target */}
-                <line
-                    x1={this.x}
-                    y1={this.y}
-                    x2={this.x + dirX * lineLength}
-                    y2={this.y + dirY * lineLength}
-                    stroke="yellow"
-                    strokeWidth="3"
-                    opacity={this.opacity * 0.8}
+                    filter="url(#grayGlow)"
                 />
             </g>
         );

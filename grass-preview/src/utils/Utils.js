@@ -92,7 +92,7 @@ export const Constants = {
     GRAVITY: 1.5,                       // Controls the arc height of the projectile path
     
     // Path animation
-    PATH_BASE_DURATION: 100,            // Base duration for path animation in ms
+    PATH_BASE_DURATION: 200,            // Base duration for path animation in ms (increased for more control over scaling)
     PATH_STROKE_COLOR: "#ffffff",       // Color of the path stroke
     PATH_STROKE_WIDTH: 1,               // Width of the path stroke
     PATH_OPACITY: 0.1,                  // Base opacity for the path
@@ -101,7 +101,7 @@ export const Constants = {
     // Triangle properties
     TRIANGLE_WIDTH: 6,                  // Width of triangles
     TRIANGLE_HEIGHT: 10,                // Default height of triangles
-    TRIANGLE_HEIGHT_SCALE_FACTOR: 20,  // Scale factor for circle radius to triangle height conversion
+    TRIANGLE_HEIGHT_SCALE_FACTOR: 20,   // Scale factor for circle radius to triangle height conversion
     FIXED_TRIANGLE_X: 10,               // X position of the fixed triangle
     FIXED_TRIANGLE_Y: 10,               // Y position of the fixed triangle
     FIXED_TRIANGLE_ROTATION: 50,        // Rotation of the fixed triangle in degrees
@@ -110,10 +110,14 @@ export const Constants = {
     MOVING_TRIANGLE_FILL: "#ffffff",    // Fill color of moving triangles
     MOVING_TRIANGLE_OPACITY: 1,         // Opacity multiplier for moving triangles
     
-    // Red Sphere properties
-    RED_SPHERE_RADIUS: 20,              // Radius of the red floating sphere
-    RED_SPHERE_FILL: "#ff3333",         // Fill color for the red sphere
-    RED_SPHERE_BASE_SPEED: 5.0,         // Base speed of the red sphere (significantly increased)
+    // Charged Triangle Settings
+    CHARGED_TRIANGLE_DAMAGE: 10,        // Damage inflicted by charged triangles (insta-kill)
+    NORMAL_TRIANGLE_DAMAGE: 1,          // Damage inflicted by normal triangles
+    
+    // Sphere properties (changed from red to gray)
+    RED_SPHERE_RADIUS: 20,              // Radius of the floating sphere
+    RED_SPHERE_FILL: "#777777",         // Fill color for the sphere (changed to gray)
+    RED_SPHERE_BASE_SPEED: 0.02,        // Base speed of the sphere (reduced to be extremely slow)
     RED_SPHERE_FLOAT_AMPLITUDE: 0,      // Amplitude of the floating motion (removed completely)
     RED_SPHERE_FLOAT_SPEED: 1.5,        // Speed of the floating motion
     RED_SPHERE_LIFETIME: 20000,         // Lifetime of the red sphere in ms (increased)

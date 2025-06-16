@@ -151,6 +151,29 @@ class RedSphereController {
     }
     
     /**
+     * Remove specified spheres by their IDs
+     * @param {Array} sphereIds - Array of sphere IDs to remove
+     */
+    removeSpheres(sphereIds) {
+        if (!sphereIds || !sphereIds.length) return;
+        
+        // Filter out the spheres with IDs in the removal list
+        const initialCount = this.spheres.length;
+        this.spheres = this.spheres.filter(sphere => !sphereIds.includes(sphere.id));
+        
+        // Log how many spheres were removed
+        const removedCount = initialCount - this.spheres.length;
+        if (removedCount > 0) {
+            console.log(`Removed ${removedCount} spheres after triangle collision`);
+            
+            // Notify about sphere updates
+            if (this.onSpheresUpdated) {
+                this.onSpheresUpdated(this.spheres);
+            }
+        }
+    }
+    
+    /**
      * Clean up resources
      */
     dispose() {
