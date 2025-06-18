@@ -1,12 +1,11 @@
 {
-  "name": "test-grass-server",
+  "name": "svg-shape-server",
   "version": "1.0.0",
-  "description": "Express server for TestGrass application",
+  "description": "Backend server for saving and managing SVG shapes",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon index.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
