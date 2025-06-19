@@ -318,23 +318,83 @@ const Shape = ({ shapeData = exampleShapeData }) => {
 
     // Placeholder functions for custom animation calculation
   const calculateControlPointPosition = (pointId, animation, currentTime) => {
-    // This is a placeholder that will be replaced with custom mathematical calculations
-    // Returns first keyframe as a simple fallback
-    if (animation.keyframes && animation.keyframes.length > 0) {
-      const keyframe = animation.keyframes[0];
-      return { x: keyframe.x, y: keyframe.y };
+    // Basic linear interpolation between keyframes
+    const keyframes = animation.keyframes;
+    if (!keyframes || keyframes.length < 2) {
+      if (keyframes && keyframes.length === 1) {
+        return { x: keyframes[0].x, y: keyframes[0].y };
+      }
+      return null;
     }
-    return null;
+    
+    // Find the surrounding keyframes
+    let startKeyframe = keyframes[0];
+    let endKeyframe = keyframes[keyframes.length - 1];
+    
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      if (keyframes[i].time <= currentTime && keyframes[i+1].time >= currentTime) {
+        startKeyframe = keyframes[i];
+        endKeyframe = keyframes[i+1];
+        break;
+      }
+    }
+    
+    // If current time is before the first keyframe or after the last one,
+    // use the closest keyframe's values directly
+    if (currentTime <= keyframes[0].time) {
+      return { x: keyframes[0].x, y: keyframes[0].y };
+    } else if (currentTime >= keyframes[keyframes.length-1].time) {
+      return { x: keyframes[keyframes.length-1].x, y: keyframes[keyframes.length-1].y };
+    }
+    
+    // Calculate position by interpolating between keyframes
+    const timeDiff = endKeyframe.time - startKeyframe.time;
+    const timeProgress = (currentTime - startKeyframe.time) / timeDiff;
+    
+    // Linear interpolation between the two keyframes
+    const x = startKeyframe.x + (endKeyframe.x - startKeyframe.x) * timeProgress;
+    const y = startKeyframe.y + (endKeyframe.y - startKeyframe.y) * timeProgress;
+    
+    return { x, y };
   };
   
   const calculateGlobalPosition = (animation, currentTime) => {
-    // This is a placeholder that will be replaced with custom mathematical calculations
-    // Returns first keyframe as a simple fallback
-    if (animation.keyframes && animation.keyframes.length > 0) {
-      const keyframe = animation.keyframes[0];
-      return { x: keyframe.x, y: keyframe.y };
+    // Use the same logic as control points for now
+    const keyframes = animation.keyframes;
+    if (!keyframes || keyframes.length < 2) {
+      if (keyframes && keyframes.length === 1) {
+        return { x: keyframes[0].x, y: keyframes[0].y };
+      }
+      return null;
     }
-    return null;
+    
+    // Find the surrounding keyframes
+    let startKeyframe = keyframes[0];
+    let endKeyframe = keyframes[keyframes.length - 1];
+    
+    for (let i = 0; i < keyframes.length - 1; i++) {
+      if (keyframes[i].time <= currentTime && keyframes[i+1].time >= currentTime) {
+        startKeyframe = keyframes[i];
+        endKeyframe = keyframes[i+1];
+        break;
+      }
+    }
+    
+    // Handle boundary cases
+    if (currentTime <= keyframes[0].time) {
+      return { x: keyframes[0].x, y: keyframes[0].y };
+    } else if (currentTime >= keyframes[keyframes.length-1].time) {
+      return { x: keyframes[keyframes.length-1].x, y: keyframes[keyframes.length-1].y };
+    }
+    
+    // Linear interpolation
+    const timeDiff = endKeyframe.time - startKeyframe.time;
+    const timeProgress = (currentTime - startKeyframe.time) / timeDiff;
+    
+    const x = startKeyframe.x + (endKeyframe.x - startKeyframe.x) * timeProgress;
+    const y = startKeyframe.y + (endKeyframe.y - startKeyframe.y) * timeProgress;
+    
+    return { x, y };
   };
 
     // Animation update function
@@ -401,6 +461,11 @@ const Shape = ({ shapeData = exampleShapeData }) => {
     const duration = shapeData.animations.duration;
     const loops = shapeData.animations.loops;
     
+    // Log animation state occasionally (every 30 frames)
+    if (Math.floor(elapsedTime * 30) % 30 === 0) {
+      console.log('Animation running:', elapsedTime.toFixed(1) + 's');
+    }
+    
     // Calculate the effective animation time based on loops
     // If loops is 0, it's infinite, so just use modulo of duration
     // If it's a specific number, check if we've exceeded total duration
@@ -443,16 +508,18 @@ const Shape = ({ shapeData = exampleShapeData }) => {
   useEffect(() => {
     // If animation is defined in shapeData, set up the animation system
     if (shapeData.animations) {
+      console.log('Setting up animation system...');
       initializeAnimation();
       return () => {
         // Cleanup function to stop animation when component unmounts
         if (animationRef.current) {
+          console.log('Cleaning up animation...');
           cancelAnimationFrame(animationRef.current);
           animationState.current.isAnimating = false;
         }
       };
     }
-  }, [shapeData]);
+  }, [shapeData]); // Note: animationLoop and other functions are defined inside the component, so they're implicitly dependencies
   
   return (
     <div 
