@@ -240,6 +240,219 @@ const Shape = ({ shapeData = exampleShapeData }) => {
     // Define the viewBox area
     return `${svgPosition.x - padding} ${svgPosition.y - padding} ${width + padding * 2} ${height + padding * 2}`;
   };
+
+  // Deep equals helper for comparing objects
+  const deepEquals = (obj1, obj2) => {
+    // Handle null/undefined cases
+    if (obj1 === obj2) return true;
+    if (obj1 === null || obj2 === null) return false;
+    if (obj1 === undefined || obj2 === undefined) return false;
+    
+    // Compare object keys and values
+    const keys1 = Object.keys(obj1 || {});
+    const keys2 = Object.keys(obj2 || {});
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    return keys1.every(key => {
+      const val1 = obj1[key];
+      const val2 = obj2[key];
+      
+      // Handle nested objects
+      if (typeof val1 === 'object' && typeof val2 === 'object') {
+        return deepEquals(val1, val2);
+      }
+      
+      return val1 === val2;
+    });
+  };
+
+    // Direct DOM update function for affected segments
+  const updateAffectedSegments = (affectedSegments, controlPoints, position) => {
+    // For each affected segment, directly update its path data
+    affectedSegments.forEach(segmentId => {
+      const pathElement = segmentRefs.current[segmentId];
+      if (!pathElement) return;
+      
+      // Find the segment definition
+      const segment = shapeData.segments.find(s => s.id === segmentId);
+      if (!segment) return;
+      
+      // Generate new path data for this segment
+      const points = segment.points.map(pointId => {
+        // Get original point
+        const originalPoint = shapeData.controlPoints.find(cp => cp.id === pointId);
+        
+        // Apply animated values if available
+        const animatedPoint = {
+          ...originalPoint,
+          ...(controlPoints[pointId] || {})
+        };
+        
+        // Apply position transform
+        return {
+          ...animatedPoint,
+          x: animatedPoint.x + (position ? position.x : shapeData.position.svg.x),
+          y: animatedPoint.y + (position ? position.y : shapeData.position.svg.y)
+        };
+      });
+      
+      // Generate path data string
+      let pathData = '';
+      if (segment.type === 'line') {
+        const start = points[0];
+        const end = points[1];
+        pathData = `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+      } else if (segment.type === 'bezier') {
+        const start = points[0];
+        const control1 = points[1];
+        const control2 = points[2];
+        const end = points[3];
+        pathData = `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y}`;
+      }
+      
+      // Directly set the path data attribute in the DOM
+      pathElement.setAttribute('d', pathData);
+    });
+  };
+
+    // Placeholder functions for custom animation calculation
+  const calculateControlPointPosition = (pointId, animation, currentTime) => {
+    // This is a placeholder that will be replaced with custom mathematical calculations
+    // Returns first keyframe as a simple fallback
+    if (animation.keyframes && animation.keyframes.length > 0) {
+      const keyframe = animation.keyframes[0];
+      return { x: keyframe.x, y: keyframe.y };
+    }
+    return null;
+  };
+  
+  const calculateGlobalPosition = (animation, currentTime) => {
+    // This is a placeholder that will be replaced with custom mathematical calculations
+    // Returns first keyframe as a simple fallback
+    if (animation.keyframes && animation.keyframes.length > 0) {
+      const keyframe = animation.keyframes[0];
+      return { x: keyframe.x, y: keyframe.y };
+    }
+    return null;
+  };
+
+    // Animation update function
+  const updateAnimationValues = (currentTime) => {
+    // Track which segments need to be redrawn
+    const affectedSegments = new Set();
+    
+    // Process control point animations
+    const newAnimatedControlPoints = { ...animatedControlPoints };
+    
+    if (shapeData.animations?.controlPointAnimations) {
+      Object.entries(shapeData.animations.controlPointAnimations).forEach(([pointId, animation]) => {
+        // Find the segments that use this control point
+        shapeData.segments.forEach(segment => {
+          if (segment.points.includes(pointId)) {
+            affectedSegments.add(segment.id);
+          }
+        });
+        
+        // Calculate new position for this control point
+        const animatedValues = calculateControlPointPosition(pointId, animation, currentTime);
+        if (animatedValues) {
+          newAnimatedControlPoints[pointId] = animatedValues;
+        }
+      });
+    }
+    
+    // Similarly process global position animations
+    let newAnimatedPosition = animatedPosition;
+    if (shapeData.animations?.positionAnimations?.global) {
+      const posAnimation = shapeData.animations.positionAnimations.global;
+      
+      // Calculate new global position
+      const calculatedPosition = calculateGlobalPosition(posAnimation, currentTime);
+      if (calculatedPosition) {
+        newAnimatedPosition = calculatedPosition;
+        
+        // All segments are affected by position changes
+        shapeData.segments.forEach(segment => {
+          affectedSegments.add(segment.id);
+        });
+      }
+    }
+    
+    // Update state only if the values have changed
+    if (!deepEquals(animatedControlPoints, newAnimatedControlPoints)) {
+      setAnimatedControlPoints(newAnimatedControlPoints);
+    }
+    
+    if (!deepEquals(animatedPosition, newAnimatedPosition)) {
+      setAnimatedPosition(newAnimatedPosition);
+    }
+    
+    // Direct update of affected segments in the DOM
+    updateAffectedSegments(affectedSegments, newAnimatedControlPoints, newAnimatedPosition);
+  };
+
+    // Animation loop using requestAnimationFrame
+  const animationLoop = (timestamp) => {
+    if (!animationState.current.isAnimating) return;
+    
+    // Calculate the current time in the animation cycle
+    const elapsedTime = (timestamp - animationState.current.startTime) / 1000; // convert to seconds
+    const duration = shapeData.animations.duration;
+    const loops = shapeData.animations.loops;
+    
+    // Calculate the effective animation time based on loops
+    // If loops is 0, it's infinite, so just use modulo of duration
+    // If it's a specific number, check if we've exceeded total duration
+    let normalizedTime;
+    if (loops === 0) {
+      normalizedTime = elapsedTime % duration;
+    } else {
+      const totalDuration = loops * duration;
+      if (elapsedTime >= totalDuration) {
+        // Animation complete, clean up and exit
+        animationState.current.isAnimating = false;
+        cancelAnimationFrame(animationRef.current);
+        return;
+      }
+      normalizedTime = elapsedTime % duration;
+    }
+    
+    // Update animated values
+    updateAnimationValues(normalizedTime);
+    
+    // Store last update time
+    animationState.current.lastUpdateTime = timestamp;
+    
+    // Request next frame
+    animationRef.current = requestAnimationFrame(animationLoop);
+  };
+
+    // Initialize animation
+  const initializeAnimation = () => {
+    // Only initialize if animation isn't already running and animation data exists
+    if (!animationState.current.isAnimating && shapeData.animations) {
+      animationState.current.isAnimating = true;
+      animationState.current.startTime = performance.now();
+      animationState.current.lastUpdateTime = performance.now();
+      animationRef.current = requestAnimationFrame(animationLoop);
+    }
+  };
+  
+  // Setup and cleanup animation when component mounts/unmounts or when shapeData changes
+  useEffect(() => {
+    // If animation is defined in shapeData, set up the animation system
+    if (shapeData.animations) {
+      initializeAnimation();
+      return () => {
+        // Cleanup function to stop animation when component unmounts
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+          animationState.current.isAnimating = false;
+        }
+      };
+    }
+  }, [shapeData]);
   
   return (
     <div 
