@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import Circle from './components/Circle';
+import UI from './components/UI';
+import Environment from './components/Environment';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -13,11 +16,9 @@ function App() {
 
   return (
     <div className="App">
-      <header className="App-header">
-        <svg width="1000" height="1000" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="40" stroke="white" strokeWidth="0.2" fill="none" />
-        </svg>
-      </header>
+        <Circle cx={60} cy={60} r={30} strokeWidth={4} stroke="blue"/>
+        <UI />
+        <Environment />
     </div>
   );
 }

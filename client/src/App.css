@@ -1,9 +1,5 @@
 .App {
   text-align: center;
-  /* padding: 2rem; */
-}
-
-.App-header {
   background-color: #282c34;
   height: 100vh;
   width: 100vw;
@@ -13,4 +9,24 @@
   justify-content: center;
   font-size: calc(10px + 2vmin);
   color: white;
+}
+
+.ui-container {
+
+}
+
+.environment-container {
+
+}
+
+.grass-component {
+
+}
+
+.ground-component {
+
+}
+
+.shape-component {
+
 }
