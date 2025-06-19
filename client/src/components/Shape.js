@@ -1,12 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-
-// Easing functions for smoother animations
-const easingFunctions = {
-  linear: t => t,
-  easeIn: t => t * t,
-  easeOut: t => t * (2 - t),
-  easeInOut: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-};
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 
 // Example of shape data JSON structure
 const exampleShapeData = {
@@ -83,219 +75,50 @@ const exampleShapeData = {
   }
 };
 
-const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
-  // Create a deep copy to avoid mutating props, and maintain state for animations
-  const [shapeData, setShapeData] = useState(() => JSON.parse(JSON.stringify(initialShapeData)));
+const Shape = ({ shapeData = exampleShapeData }) => {
+  // State for animated control points and position
+  const [animatedControlPoints, setAnimatedControlPoints] = useState({});
+  const [animatedPosition, setAnimatedPosition] = useState(null);
   
-  // Track animation state
-  const [isAnimating, setIsAnimating] = useState(false);
+  // Store references for animation and DOM elements
   const animationRef = useRef(null);
-  const startTimeRef = useRef(null);
-  const lastFrameTimeRef = useRef(null);
-  const segmentCacheRef = useRef({});
+  const animationState = useRef({
+    isAnimating: false,
+    startTime: 0,
+    currentTime: 0,
+    lastUpdateTime: 0
+  });
   
-  // Track which segments need to be updated
-  const [affectedSegments, setAffectedSegments] = useState(new Set());
+  // Container ref for direct DOM updates
+  const containerRef = useRef(null);
   
-  // Animation controls
-  const toggleAnimation = () => {
-    setIsAnimating(prev => !prev);
-  };
+  // Store refs for each segment path element for direct DOM updates
+  const segmentRefs = useRef({});
   
-  // Helper function to find a control point by ID
+  // Helper function to find a control point by ID, with animation support
   const findPoint = useCallback((pointId) => {
-    return shapeData.controlPoints.find(cp => cp.id === pointId);
-  }, [shapeData]);
-  
-  // Apply position transform to a point
-  const transformPoint = (point) => {
-    // Apply the SVG position transform to adjust all coordinates
-    // This shifts all points relative to the shape's SVG position anchor
-    return {
-      ...point,
-      x: point.x + shapeData.position.svg.x,
-      y: point.y + shapeData.position.svg.y
-    };
-  };
-  
-  // Interpolate between keyframes to get a value at a specific time
-  const interpolateValue = useCallback((keyframes, time, property, easingFn) => {
-    if (!keyframes || keyframes.length === 0) return null;
-    
-    // Handle time before first keyframe or after last keyframe
-    if (time <= keyframes[0].time) return keyframes[0][property];
-    if (time >= keyframes[keyframes.length - 1].time) return keyframes[keyframes.length - 1][property];
-    
-    // Find the two keyframes we're between
-    let startFrame = keyframes[0];
-    let endFrame = keyframes[keyframes.length - 1];
-    
-    for (let i = 0; i < keyframes.length - 1; i++) {
-      if (time >= keyframes[i].time && time < keyframes[i + 1].time) {
-        startFrame = keyframes[i];
-        endFrame = keyframes[i + 1];
-        break;
-      }
-    }
-    
-    // Calculate progress between the two keyframes (0 to 1)
-    const timeProgress = (time - startFrame.time) / (endFrame.time - startFrame.time);
-    
-    // Apply easing function if provided
-    const progress = easingFn ? easingFn(timeProgress) : timeProgress;
-    
-    // Interpolate the value
-    return startFrame[property] + (endFrame[property] - startFrame[property]) * progress;
-  }, []);
-  
-  // Get a set of segments that contain a given control point
-  const getSegmentsForControlPoint = useCallback((pointId) => {
-    return new Set(
-      shapeData.segments
-        .filter(segment => segment.points.includes(pointId))
-        .map(segment => segment.id)
-    );
-  }, [shapeData.segments]);
-  
-  // Update control point positions based on current animation time
-  const updateAnimatedPoints = useCallback((elapsedTime) => {
-    const animations = shapeData.animations;
-    if (!animations || !animations.controlPointAnimations) return;
-    
-    // Track affected segments for this frame
-    const segmentsToUpdate = new Set();
-    
-    // Get animation duration - might be looping
-    const duration = animations.duration || 3;
-    const loopCount = animations.loops === 0 ? Infinity : animations.loops;
-    const loopDuration = duration * loopCount;
-    
-    // Get current time in the animation cycle
-    let currentTime;
-    if (loopCount === Infinity || elapsedTime <= loopDuration) {
-      currentTime = elapsedTime % duration;
-    } else {
-      // Animation finished
-      currentTime = duration;
-      setIsAnimating(false);
-    }
-    
-    // Get the easing function
-    const easingFn = animations.easing ? easingFunctions[animations.easing] : easingFunctions.linear;
-    
-    // Create a copy of the current state
-    const updatedShapeData = { ...shapeData };
-    let hasUpdates = false;
-    
-    // Update control points
-    Object.entries(animations.controlPointAnimations).forEach(([pointId, animation]) => {
-      const pointIndex = updatedShapeData.controlPoints.findIndex(cp => cp.id === pointId);
-      if (pointIndex === -1) return;
-      
-      const keyframes = animation.keyframes;
-      if (!keyframes || keyframes.length < 2) return;
-      
-      const newX = interpolateValue(keyframes, currentTime, 'x', easingFn);
-      const newY = interpolateValue(keyframes, currentTime, 'y', easingFn);
-      
-      if (newX !== null && newY !== null) {
-        // Direct update of the control point
-        updatedShapeData.controlPoints[pointIndex] = {
-          ...updatedShapeData.controlPoints[pointIndex],
-          x: newX,
-          y: newY
-        };
-        hasUpdates = true;
-        
-        // Track segments that need to be updated
-        const affectedSegments = getSegmentsForControlPoint(pointId);
-        affectedSegments.forEach(segId => segmentsToUpdate.add(segId));
-      }
-    });
-    
-    // Update position animations
-    if (animations.positionAnimations?.global?.keyframes) {
-      const globalKeyframes = animations.positionAnimations.global.keyframes;
-      const newX = interpolateValue(globalKeyframes, currentTime, 'x', easingFn);
-      const newY = interpolateValue(globalKeyframes, currentTime, 'y', easingFn);
-      
-      if (newX !== null && newY !== null) {
-        updatedShapeData.position = {
-          ...updatedShapeData.position,
-          global: { x: newX, y: newY }
-        };
-        hasUpdates = true;
-      }
-    }
-    
-    // Only update state if something changed
-    if (hasUpdates) {
-      setShapeData(updatedShapeData);
-      setAffectedSegments(segmentsToUpdate);
-    }
-  }, [shapeData, interpolateValue, getSegmentsForControlPoint]);
-  
-  // Animation frame loop
-  const animate = useCallback((timestamp) => {
-    if (!startTimeRef.current) startTimeRef.current = timestamp;
-    lastFrameTimeRef.current = timestamp;
-    
-    const elapsedTime = (timestamp - startTimeRef.current) / 1000; // convert to seconds
-    
-    // Update animated points
-    updateAnimatedPoints(elapsedTime);
-    
-    // Continue animation loop if still animating
-    if (isAnimating) {
-      animationRef.current = requestAnimationFrame(animate);
-    }
-  }, [isAnimating, updateAnimatedPoints]);
-  
-  // Start/stop animation
-  useEffect(() => {
-    const hasAnimations = 
-      shapeData.animations && 
-      (shapeData.animations.controlPointAnimations || 
-       shapeData.animations.positionAnimations);
-    
-    // Auto-start animation if it exists
-    if (hasAnimations && !isAnimating) {
-      setIsAnimating(true);
-    }
-    
-    // Set up animation loop
-    if (isAnimating) {
-      // Reset animation refs
-      startTimeRef.current = null;
-      lastFrameTimeRef.current = null;
-      
-      // Start animation loop
-      animationRef.current = requestAnimationFrame(animate);
-      
-      // Clean up on unmount or when animation stops
-      return () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-        }
+    // If this point has animated values, use those instead of the original
+    if (animatedControlPoints[pointId]) {
+      return {
+        ...shapeData.controlPoints.find(cp => cp.id === pointId),
+        ...animatedControlPoints[pointId]
       };
     }
-  }, [shapeData.animations, isAnimating, animate]);
+    return shapeData.controlPoints.find(cp => cp.id === pointId);
+  }, [shapeData.controlPoints, animatedControlPoints]);
   
-  // Update when props change
-  useEffect(() => {
-    // Only update if the props have changed
-    if (JSON.stringify(initialShapeData) !== JSON.stringify(shapeData)) {
-      setShapeData(JSON.parse(JSON.stringify(initialShapeData)));
-      
-      // Reset animation
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      setIsAnimating(false);
-      startTimeRef.current = null;
-      lastFrameTimeRef.current = null;
-    }
-  }, [initialShapeData, shapeData]);
+  // Apply position transform to a point, with animation support
+  const transformPoint = useCallback((point) => {
+    // Use animated position if available, otherwise use the original
+    const position = animatedPosition || shapeData.position.svg;
+    
+    // Apply the SVG position transform to adjust all coordinates
+    return {
+      ...point,
+      x: point.x + position.x,
+      y: point.y + position.y
+    };
+  }, [shapeData.position.svg, animatedPosition]);
   
   // Generate SVG path data from segments
   const generatePathData = () => {
@@ -333,18 +156,8 @@ const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
   };
   
   // Generate SVG paths for each segment with its own style
-  const renderSegments = useCallback(() => {
+  const renderSegments = () => {
     return shapeData.segments.map(segment => {
-      // Skip expensive calculation for segments not affected by animation in this frame
-      // unless there are no specifically tracked affected segments
-      if (affectedSegments.size > 0 && !affectedSegments.has(segment.id)) {
-        // Re-use previously calculated path data if possible
-        const cachedPath = segmentCacheRef.current[segment.id];
-        if (cachedPath) {
-          return cachedPath;
-        }
-      }
-      
       const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
       let pathData = '';
       
@@ -360,28 +173,30 @@ const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
         pathData = `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y}`;
       }
       
-      // Create path element
-      const pathElement = (
+      return (
         <path
           key={segment.id}
+          ref={el => { if (el) segmentRefs.current[segment.id] = el; }}
           d={pathData}
           fill="none"
           stroke={segment.style.stroke || shapeData.style.stroke}
           strokeWidth={segment.style.strokeWidth || shapeData.style.strokeWidth}
         />
       );
-      
-      // Cache it for future renders
-      segmentCacheRef.current[segment.id] = pathElement;
-      
-      return pathElement;
     });
-  }, [shapeData.segments, shapeData.style, affectedSegments, findPoint, transformPoint]);
+  };
   
-  // Render control points as small circles
-  const renderControlPoints = () => {
+  // Render control points as small circles - memoized for performance
+  const renderControlPoints = useMemo(() => {
     return shapeData.controlPoints.map(point => {
-      const transformedPoint = transformPoint(point);
+      // Use the animated values if available
+      const animatedPoint = animatedControlPoints[point.id];
+      const effectivePoint = animatedPoint ? 
+        { ...point, ...animatedPoint } :
+        point;
+      
+      const transformedPoint = transformPoint(effectivePoint);
+      
       return (
         <circle
           key={point.id}
@@ -394,19 +209,24 @@ const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
         />
       );
     });
-  };
+  }, [shapeData.controlPoints, animatedControlPoints, transformPoint]);
   
-  // Render position anchor point (main anchor for the shape)
-  const renderPositionAnchor = () => (
-    <circle
-      cx={shapeData.position.svg.x}
-      cy={shapeData.position.svg.y}
-      r={6}
-      fill="yellow"
-      stroke="black"
-      strokeWidth="1"
-    />
-  );
+  // Render position anchor point (main anchor for the shape) - memoized for performance
+  const renderPositionAnchor = useMemo(() => {
+    // Use animated position if available
+    const position = animatedPosition || shapeData.position.svg;
+    
+    return (
+      <circle
+        cx={position.x}
+        cy={position.y}
+        r={6}
+        fill="yellow"
+        stroke="black"
+        strokeWidth="1"
+      />
+    );
+  }, [shapeData.position.svg, animatedPosition]);
   
   // Calculate the bounding box considering position anchor and width/height
   const calculateViewBox = () => {
@@ -421,51 +241,17 @@ const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
     return `${svgPosition.x - padding} ${svgPosition.y - padding} ${width + padding * 2} ${height + padding * 2}`;
   };
   
-  // Check if animations are defined in the shape data
-  const hasAnimations = useMemo(() => {
-    return shapeData.animations && (
-      (shapeData.animations.controlPointAnimations && 
-       Object.keys(shapeData.animations.controlPointAnimations).length > 0) || 
-      (shapeData.animations.positionAnimations && 
-       Object.keys(shapeData.animations.positionAnimations).length > 0)
-    );
-  }, [shapeData.animations]);
-
   return (
-    <div className="shape-component" style={{ 
-      position: 'absolute', 
-      top: `${shapeData.position.global.y}px`, 
-      left: `${shapeData.position.global.x}px`,
-      transition: 'top 0.1s ease-out, left 0.1s ease-out' // Smooth transitions for global position changes
-    }}>
-      {hasAnimations && (
-        <div style={{ 
-          marginBottom: '8px', 
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          color: 'white',
-          fontSize: '12px'
-        }}>
-          <button 
-            onClick={toggleAnimation} 
-            style={{ 
-              background: isAnimating ? '#f44336' : '#4CAF50',
-              color: 'white',
-              border: 'none',
-              borderRadius: '3px',
-              padding: '2px 6px',
-              cursor: 'pointer'
-            }}
-          >
-            {isAnimating ? 'Pause' : 'Play'}
-          </button>
-          <span>
-            {isAnimating ? 'Animation running' : 'Animation paused'}
-          </span>
-        </div>
-      )}
-      
+    <div 
+      ref={containerRef}
+      className="shape-component" 
+      style={{ 
+        position: 'absolute', 
+        top: `${animatedPosition?.y || shapeData.position.global.y}px`, 
+        left: `${animatedPosition?.x || shapeData.position.global.x}px`,
+        transition: 'top 0.01s linear, left 0.01s linear' // Smooth out position updates
+      }}
+    >
       <svg 
         width={shapeData.width} 
         height={shapeData.height}
@@ -474,13 +260,13 @@ const Shape = ({ shapeData: initialShapeData = exampleShapeData }) => {
         style={{ border: '1px dashed rgba(255, 255, 255, 0.3)' }}
       >
         {/* Render position anchor point */}
-        {renderPositionAnchor()}
+        {renderPositionAnchor}
         
         {/* Render each segment with its own style */}
         {renderSegments()}
         
         {/* Render control points */}
-        {renderControlPoints()}
+        {renderControlPoints}
       </svg>
     </div>
   );
