@@ -14,28 +14,28 @@ const exampleShapeData = {
     duration: 3, // Total animation duration in seconds
     loops: 0,    // 0 means infinite loop, any positive number means that many loops
     controlPointAnimations: {
-      "cp-2": {  // Animate control point with ID "cp-2"
+      "cp-1": {  // Animate control point with ID "cp-2"
         keyframes: [
-          { time: 0, x: 100, y: 50 },   // Starting position (at 0 seconds)
-          { time: 1.0, x: 120, y: 80 },  // Position at 1 second
-          { time: 2.3, x: 80, y: 90 },   // Position at 2.3 seconds
-          { time: 3.0, x: 100, y: 50 }   // End position (back to start for smooth looping)
+          { time: 0, x: 50, y: 50 },   // Starting position (at 0 seconds)
+          { time: 1.5, x: 0, y: 50 },  // Position at 1 second
+          // { time: 2.3, x: 80, y: 90 },   // Position at 2.3 seconds
+          { time: 3.0, x: 50, y: 50 }   // End position (back to start for smooth looping)
         ]
       },
-      "cp-3": {  // Animate another control point
-        keyframes: [
-          { time: 0, x: 100, y: 100 },
-          { time: 1.5, x: 120, y: 120 },
-          { time: 3.0, x: 100, y: 100 }
-        ]
-      }
+      // "cp-3": {  // Animate another control point
+      //   keyframes: [
+      //     { time: 0, x: 100, y: 100 },
+      //     { time: 1.5, x: 120, y: 120 },
+      //     { time: 3.0, x: 100, y: 100 }
+      //   ]
+      // }
     },
     positionAnimations: {
       global: { // Animate the global position
         keyframes: [
-          { time: 0, x: 100, y: 100 },
-          { time: 1.5, x: 150, y: 150 },
-          { time: 3.0, x: 100, y: 100 }
+          // { time: 0, x: 100, y: 100 },
+          // { time: 1.5, x: 150, y: 150 },
+          // { time: 3.0, x: 100, y: 100 }
         ]
       }
     }
