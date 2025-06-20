@@ -17,16 +17,6 @@
     "duration": 3,
     "loops": 0,
     "controlPointAnimations": {
-      "cp-1": {
-        "formula": {
-          "x": {
-            "expression": "50 + 50 * sin(TWO_PI * n)"
-          },
-          "y": {
-            "expression": "50"
-          }
-        }
-      },
       "cp-3": {
         "formula": {
           "x": {
@@ -40,12 +30,12 @@
       "cp-4": {
         "formula": {
           "x": {
-            "expression": "150 + 30 * sin(TWO_PI * 2 * n) * exp(-5 * n)"
+            "expression": "120 + 30 * sin(TWO_PI * 2 * n) * exp(-5 * n)"
           },
           "y": {
             "expression": "baseY + amp1 * sin(TWO_PI * freq1 * n) + amp2 * sin(TWO_PI * freq2 * n + phase)",
             "variables": {
-              "baseY": 100,
+              "baseY": 110,
               "amp1": 15,
               "freq1": 1,
               "amp2": 5,
@@ -63,7 +53,7 @@
     }
   },
   "controlPoints": [
-    { "id": "cp-1", "x": 50, "y": 50, "type": "anchor" },
+    { "id": "cp-1", "x": 200, "y": 150, "type": "anchor" },
     { "id": "cp-2", "x": 100, "y": 50, "type": "control" },
     { "id": "cp-3", "x": 100, "y": 100, "type": "control" },
     { "id": "cp-4", "x": 150, "y": 100, "type": "anchor" },
@@ -93,7 +83,7 @@
   "fillPath": true,
   "closePath": true,
   "style": {
-    "fill": "rgba(120, 200, 255, 0.3)",
+    "fill": "rgba(120, 200, 255, 0.7)",
     "fillOpacity": 0.5,
     "stroke": "#ffffff",
     "strokeWidth": 1

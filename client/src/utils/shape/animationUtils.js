@@ -59,33 +59,7 @@ export const calculateFormula = (formula, currentTime, duration) => {
     random: Math.random
   };
 
-  // Simple predefined formula types for convenience
-  if (formula.type) {
-    switch (formula.type) {
-      case 'sine':
-        return evaluateExpression(
-          `${formula.baseValue} + ${formula.amplitude} * sin(TWO_PI * ${formula.frequency} * n + ${formula.phase || 0})`,
-          variables
-        );
-      
-      case 'cosine':
-        return evaluateExpression(
-          `${formula.baseValue} + ${formula.amplitude} * cos(TWO_PI * ${formula.frequency} * n + ${formula.phase || 0})`,
-          variables
-        );
-      
-      case 'linear':
-        return evaluateExpression(
-          `${formula.startValue} + (${formula.endValue} - ${formula.startValue}) * n`,
-          variables
-        );
-      
-      case 'constant':
-        return formula.value;
-    }
-  }
-  
-  // If it's an expression string, evaluate it directly
+  // Only support expression-based formulas
   if (formula.expression) {
     // Add any custom variables defined in the formula
     if (formula.variables) {
@@ -96,6 +70,9 @@ export const calculateFormula = (formula, currentTime, duration) => {
     
     return evaluateExpression(formula.expression, variables);
   }
+  
+  console.error('Invalid formula format. Must include an expression property:', formula);
+  return null;
   
   console.warn(`Invalid formula: ${JSON.stringify(formula)}`);
   return null;

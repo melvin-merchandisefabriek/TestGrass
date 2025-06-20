@@ -67,7 +67,7 @@ const defaultShapeData = {
   }
 };
 
-const Shape = ({ filePath, shapeData: providedShapeData }) => {
+const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData }) => {
   // State for storing the loaded shape data
   const [shapeData, setShapeData] = useState(providedShapeData || defaultShapeData);
   
@@ -76,7 +76,32 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
     if (filePath) {
       const loadData = async () => {
         try {
+          // Load the base shape data
           const data = await loadShapeData(filePath);
+          
+          // If there's a modifications path, load and apply those modifications
+          if (modificationsPath) {
+            try {
+              // Import dynamically to avoid circular dependencies
+              const { loadModifications, applyShapeModifications } = await import('../utils/shape/modificationUtils');
+              
+              // Load the modifications file
+              const modifications = await loadModifications(modificationsPath);
+              
+              if (modifications) {
+                // Apply the modifications to the shape data
+                const modifiedData = applyShapeModifications(data, modifications);
+                console.log('Applied modifications:', modificationsPath, modifiedData);
+                setShapeData(modifiedData);
+                return;
+              }
+            } catch (modError) {
+              console.error('Error applying modifications:', modError);
+              // Continue with unmodified data if modification fails
+            }
+          }
+          
+          // Set the regular shape data if no modifications or if modifications failed
           setShapeData(data);
         } catch (error) {
           console.error('Failed to load shape data:', error);
@@ -89,7 +114,7 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
       
       loadData();
     }
-  }, [filePath, providedShapeData]);
+  }, [filePath, modificationsPath, providedShapeData]);
   // State for animated control points and position
   const [animatedControlPoints, setAnimatedControlPoints] = useState({});
   const [animatedPosition, setAnimatedPosition] = useState(null);
@@ -396,34 +421,97 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
             className="shape-fill-path"
             d={(() => {
               let pathData = '';
+              let firstPoint = null;
               
-              shapeData.segments.forEach(segment => {
-                const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
+              // Log the shape ID and segments for menu-square
+              if (shapeData.id === 'menu-square') {
+                console.log('Building path for menu-square:', JSON.stringify(shapeData.segments, null, 2));
+              }
+              
+              // First, extract all points from all segments to build a proper path
+              const allPoints = [];
+              
+              // Extract first point from each segment
+              shapeData.segments.forEach((segment, index) => {
+                const points = segment.points.map(pointId => {
+                  const point = findPoint(pointId);
+                  return transformPoint(point);
+                });
                 
-                if (segment.type === 'line') {
-                  const start = points[0];
-                  const end = points[1];
-                  
-                  if (pathData === '') {
-                    pathData += `M ${start.x} ${start.y} `;
-                  } else {
-                    pathData += `L ${end.x} ${end.y} `;
+                if (index === 0) {
+                  // For the first segment, add both start and end points
+                  if (segment.type === 'line') {
+                    allPoints.push(points[0]); // Start point
+                    allPoints.push(points[1]); // End point
+                  } else if (segment.type === 'bezier') {
+                    allPoints.push(points[0]); // Start point
+                    allPoints.push(points[3]); // End point
                   }
-                } else if (segment.type === 'bezier') {
-                  const start = points[0];
-                  const control1 = points[1];
-                  const control2 = points[2];
-                  const end = points[3];
-                  
-                  if (pathData === '') {
-                    pathData += `M ${start.x} ${start.y} `;
+                } else {
+                  // For subsequent segments, just add the end point
+                  // (assuming segments are connected)
+                  if (segment.type === 'line') {
+                    allPoints.push(points[1]); // End point
+                  } else if (segment.type === 'bezier') {
+                    allPoints.push(points[3]); // End point
                   }
-                  pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
                 }
               });
               
+              // Now build the path with the collected points
+              if (allPoints.length > 0) {
+                // Start the path with the first point
+                pathData = `M ${allPoints[0].x} ${allPoints[0].y} `;
+                firstPoint = allPoints[0];
+                
+                // Add line segments to each subsequent point
+                for (let i = 1; i < allPoints.length; i++) {
+                  pathData += `L ${allPoints[i].x} ${allPoints[i].y} `;
+                }
+              } else {
+                // If no points were extracted, fall back to the original method
+                shapeData.segments.forEach((segment, index) => {
+                  const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
+                  
+                  if (segment.type === 'line') {
+                    const start = points[0];
+                    const end = points[1];
+                    
+                    if (pathData === '') {
+                      pathData += `M ${start.x} ${start.y} `;
+                      firstPoint = start;
+                    } else {
+                      pathData += `L ${end.x} ${end.y} `;
+                    }
+                    
+                    // Log each line segment for menu-square
+                    if (shapeData.id === 'menu-square') {
+                      console.log(`Segment ${index} (${segment.id}): Line from (${start.x}, ${start.y}) to (${end.x}, ${end.y})`);
+                    }
+                  } else if (segment.type === 'bezier') {
+                    const start = points[0];
+                    const control1 = points[1];
+                    const control2 = points[2];
+                    const end = points[3];
+                    
+                    if (pathData === '') {
+                      pathData += `M ${start.x} ${start.y} `;
+                      firstPoint = start;
+                    }
+                    pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                  }
+                });
+              }
+              
+              // Add the Z command to close the path if requested
               if (shapeData.closePath) {
                 pathData += 'Z';
+              }
+              
+              // Log the final path for menu-square
+              if (shapeData.id === 'menu-square') {
+                console.log('Final path data for menu-square:', pathData);
+                console.log('All extracted points:', allPoints);
               }
               
               return pathData;

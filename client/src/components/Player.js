@@ -7,12 +7,13 @@ import Shape from './Shape';
  * @returns {JSX.Element} The rendered Player component
  */
 const Player = () => {
-  // The shape component will load and process the JSON file
+  // Define paths to shape and wind effect
   const playerShapePath = process.env.PUBLIC_URL + '/data/simplePlayer.json';
+  const windEffectPath = process.env.PUBLIC_URL + '/data/wind.json';
 
   return (
     <div className="player-container">
-      <Shape filePath={playerShapePath} />
+      <Shape filePath={playerShapePath} modificationsPath={windEffectPath} />
     </div>
   );
 };
