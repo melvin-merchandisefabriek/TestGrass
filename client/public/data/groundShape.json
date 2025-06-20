@@ -5,7 +5,7 @@
   "height": 200,
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 100, "y": 100 }
+    "global": { "x": 0, "y": 0 }
   },
   "animations": {
     "duration": 3,

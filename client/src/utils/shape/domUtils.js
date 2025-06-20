@@ -170,9 +170,6 @@ export const updateAffectedSegments = (
  * @returns {string} SVG viewBox attribute value
  */
 export const calculateViewBox = (svgPosition, width, height) => {
-  // Calculate padding based on the shape's dimensions
-  const padding = Math.max(width, height) * 0.1;
-  
-  // Define the viewBox area
-  return `${svgPosition.x - padding} ${svgPosition.y - padding} ${width + padding * 2} ${height + padding * 2}`;
+  // No padding - use exact dimensions as specified in the JSON
+  return `${svgPosition.x} ${svgPosition.y} ${width} ${height}`;
 };
