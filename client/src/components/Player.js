@@ -1,4 +1,5 @@
 import React from 'react';
+import Shape from './Shape';
 
 /**
  * Player component for controlling and displaying player information
@@ -6,9 +7,12 @@ import React from 'react';
  * @returns {JSX.Element} The rendered Player component
  */
 const Player = () => {
+  // The shape component will load and process the JSON file
+  const playerShapePath = process.env.PUBLIC_URL + '/data/simplePlayer.json';
+
   return (
     <div className="player-container">
-        {/* Player content will go here */}
+      <Shape filePath={playerShapePath} />
     </div>
   );
 };

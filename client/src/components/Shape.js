@@ -185,20 +185,20 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
   
   // Render position anchor point (main anchor for the shape) - memoized for performance
   const renderPositionAnchor = useMemo(() => {
-    // Use animated position if available
-    const position = animatedPosition || shapeData.position.svg;
+    // Check if there's a specific anchor position defined
+    const anchorPosition = shapeData.position.anchor || { x: 0, y: 0 };
     
     return (
       <circle
-        cx={position.x}
-        cy={position.y}
+        cx={anchorPosition.x}
+        cy={anchorPosition.y}
         r={6}
         fill="yellow"
         stroke="black"
         strokeWidth="1"
       />
     );
-  }, [shapeData.position.svg, animatedPosition]);
+  }, [shapeData.position]);
   
   // Animation update function
   const updateAnimationValues = (currentTime) => {
