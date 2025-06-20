@@ -1,14 +1,88 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { exampleShapeData } from './ShapeData';
 import { 
   calculateControlPointPosition,
   calculateGlobalPosition,
   calculateViewBox,
   deepEquals,
-  updateAffectedSegments
+  updateAffectedSegments,
+  loadShapeData
 } from '../utils/shape';
 
-const Shape = ({ shapeData = exampleShapeData }) => {
+// Default simple shape data for fallback
+const defaultShapeData = {
+  id: "shape-default",
+  name: "Default Shape",
+  width: 200,
+  height: 200,
+  position: {
+    svg: { x: 0, y: 0 },
+    global: { x: 100, y: 100 }
+  },
+  controlPoints: [
+    { id: "cp-1", x: 50, y: 50, type: "anchor" },
+    { id: "cp-2", x: 150, y: 50, type: "anchor" },
+    { id: "cp-3", x: 150, y: 150, type: "anchor" },
+    { id: "cp-4", x: 50, y: 150, type: "anchor" }
+  ],
+  segments: [
+    {
+      id: "seg-1",
+      type: "line",
+      points: ["cp-1", "cp-2"],
+      style: { stroke: "#ffffff", strokeWidth: 2 }
+    },
+    {
+      id: "seg-2",
+      type: "line",
+      points: ["cp-2", "cp-3"],
+      style: { stroke: "#ffffff", strokeWidth: 2 }
+    },
+    {
+      id: "seg-3",
+      type: "line",
+      points: ["cp-3", "cp-4"],
+      style: { stroke: "#ffffff", strokeWidth: 2 }
+    },
+    {
+      id: "seg-4",
+      type: "line",
+      points: ["cp-4", "cp-1"],
+      style: { stroke: "#ffffff", strokeWidth: 2 }
+    }
+  ],
+  fillPath: true,
+  closePath: true,
+  style: {
+    fill: "rgba(120, 200, 255, 0.3)",
+    fillOpacity: 0.5,
+    stroke: "#ffffff",
+    strokeWidth: 1
+  }
+};
+
+const Shape = ({ filePath, shapeData: providedShapeData }) => {
+  // State for storing the loaded shape data
+  const [shapeData, setShapeData] = useState(providedShapeData || defaultShapeData);
+  
+  // Load shape data from file path if provided
+  useEffect(() => {
+    if (filePath) {
+      const loadData = async () => {
+        try {
+          const data = await loadShapeData(filePath);
+          setShapeData(data);
+        } catch (error) {
+          console.error('Failed to load shape data:', error);
+          // Fallback to default data if loading fails
+          if (!providedShapeData) {
+            setShapeData(defaultShapeData);
+          }
+        }
+      };
+      
+      loadData();
+    }
+  }, [filePath, providedShapeData]);
   // State for animated control points and position
   const [animatedControlPoints, setAnimatedControlPoints] = useState({});
   const [animatedPosition, setAnimatedPosition] = useState(null);

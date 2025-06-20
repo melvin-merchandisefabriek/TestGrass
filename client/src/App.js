@@ -3,6 +3,7 @@ import './App.css';
 import Circle from './components/Circle';
 import UI from './components/UI';
 import Environment from './components/Environment';
+import Player from './components/Player';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -19,6 +20,7 @@ function App() {
         <Circle cx={60} cy={60} r={30} strokeWidth={4} stroke="blue"/>
         <UI />
         <Environment />
+        <Player />
     </div>
   );
 }
