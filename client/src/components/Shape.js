@@ -102,8 +102,12 @@ const exampleShapeData = {
       style: { stroke: "#0000ff", strokeWidth: 2 }
     }
   ],
+  // Configuration for the combined path fill
+  fillPath: true,
+  closePath: true,
   style: {
-    fill: "none",
+    fill: "rgba(120, 200, 255, 0.3)", // Semi-transparent blue fill
+    fillOpacity: 0.5,
     stroke: "#ffffff",
     strokeWidth: 1
   }
@@ -154,40 +158,7 @@ const Shape = ({ shapeData = exampleShapeData }) => {
     };
   }, [shapeData.position.svg, animatedPosition]);
   
-  // Generate SVG path data from segments
-  const generatePathData = () => {
-    let pathData = '';
-    
-    shapeData.segments.forEach(segment => {
-      const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
-      
-      if (segment.type === 'line') {
-        // Line segment needs two points - start and end
-        const start = points[0];
-        const end = points[1];
-        
-        // If this is the first segment, start with M (move to)
-        if (pathData === '') {
-          pathData += `M ${start.x} ${start.y} `;
-        }
-        pathData += `L ${end.x} ${end.y} `;
-      } else if (segment.type === 'bezier') {
-        // Cubic bezier needs 4 points
-        const start = points[0];
-        const control1 = points[1];
-        const control2 = points[2];
-        const end = points[3];
-        
-        // If this is the first segment, start with M (move to)
-        if (pathData === '') {
-          pathData += `M ${start.x} ${start.y} `;
-        }
-        pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
-      }
-    });
-    
-    return pathData;
-  };
+  // Function to generate SVG path data has been moved inline in the render and updateAffectedSegments functions
   
   // Generate SVG paths for each segment with its own style
   const renderSegments = () => {
@@ -212,7 +183,7 @@ const Shape = ({ shapeData = exampleShapeData }) => {
           key={segment.id}
           ref={el => { if (el) segmentRefs.current[segment.id] = el; }}
           d={pathData}
-          fill="none"
+          fill={shapeData.fillPath ? "none" : (segment.style.fill || shapeData.style.fill || "none")}
           stroke={segment.style.stroke || shapeData.style.stroke}
           strokeWidth={segment.style.strokeWidth || shapeData.style.strokeWidth}
         />
@@ -303,8 +274,13 @@ const Shape = ({ shapeData = exampleShapeData }) => {
 
     // Direct DOM update function for affected segments
   const updateAffectedSegments = (affectedSegments, controlPoints, position) => {
+    // Track if we need to update the fill path
+    let updateFillPath = false;
+    
     // For each affected segment, directly update its path data
     affectedSegments.forEach(segmentId => {
+      updateFillPath = true; // Any segment change requires fill path update
+      
       const pathElement = segmentRefs.current[segmentId];
       if (!pathElement) return;
       
@@ -348,6 +324,66 @@ const Shape = ({ shapeData = exampleShapeData }) => {
       // Directly set the path data attribute in the DOM
       pathElement.setAttribute('d', pathData);
     });
+    
+    // Update the fill path if needed
+    if (updateFillPath && shapeData.fillPath) {
+      const fillPathElement = containerRef.current?.querySelector('.shape-fill-path');
+      if (fillPathElement) {
+        // Generate the path data using the updated control points
+        let pathData = '';
+        
+        shapeData.segments.forEach(segment => {
+          const points = segment.points.map(pointId => {
+            // Get original point
+            const originalPoint = shapeData.controlPoints.find(cp => cp.id === pointId);
+            
+            // Apply animated values if available
+            const animatedPoint = {
+              ...originalPoint,
+              ...(controlPoints[pointId] || {})
+            };
+            
+            // Apply position transform
+            return {
+              ...animatedPoint,
+              x: animatedPoint.x + (position ? position.x : shapeData.position.svg.x),
+              y: animatedPoint.y + (position ? position.y : shapeData.position.svg.y)
+            };
+          });
+          
+          if (segment.type === 'line') {
+            const start = points[0];
+            const end = points[1];
+            
+            if (pathData === '') {
+              pathData += `M ${start.x} ${start.y} `;
+            } else {
+              pathData += `L ${end.x} ${end.y} `;
+            }
+          } else if (segment.type === 'bezier') {
+            const start = points[0];
+            const control1 = points[1];
+            const control2 = points[2];
+            const end = points[3];
+            
+            if (pathData === '') {
+              pathData += `M ${start.x} ${start.y} `;
+            }
+            pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+          }
+        });
+        
+        // If shape is marked as closed, add Z command to close the path
+        if (shapeData.closePath) {
+          pathData += 'Z';
+        }
+        
+        // Update the fill path with the new path data
+        fillPathElement.setAttribute('d', pathData);
+      } else {
+        console.warn('Fill path element not found. Make sure it has class "shape-fill-path"');
+      }
+    }
   };
 
     // Placeholder functions for custom animation calculation
@@ -698,6 +734,50 @@ const Shape = ({ shapeData = exampleShapeData }) => {
         xmlns="http://www.w3.org/2000/svg"
         style={{ border: '1px dashed rgba(255, 255, 255, 0.3)' }}
       >
+        {/* If fillPath is true, render a single combined path with fill */}
+        {shapeData.fillPath && (
+          <path
+            className="shape-fill-path"
+            d={(() => {
+              let pathData = '';
+              
+              shapeData.segments.forEach(segment => {
+                const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
+                
+                if (segment.type === 'line') {
+                  const start = points[0];
+                  const end = points[1];
+                  
+                  if (pathData === '') {
+                    pathData += `M ${start.x} ${start.y} `;
+                  } else {
+                    pathData += `L ${end.x} ${end.y} `;
+                  }
+                } else if (segment.type === 'bezier') {
+                  const start = points[0];
+                  const control1 = points[1];
+                  const control2 = points[2];
+                  const end = points[3];
+                  
+                  if (pathData === '') {
+                    pathData += `M ${start.x} ${start.y} `;
+                  }
+                  pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                }
+              });
+              
+              if (shapeData.closePath) {
+                pathData += 'Z';
+              }
+              
+              return pathData;
+            })()}
+            fill={shapeData.style.fill || "none"}
+            fillOpacity={shapeData.style.fillOpacity || 1}
+            stroke="none"
+          />
+        )}
+        
         {/* Render position anchor point */}
         {renderPositionAnchor}
         
