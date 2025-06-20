@@ -7,6 +7,12 @@
     "svg": { "x": 0, "y": 0 },
     "global": { "x": 0, "y": 0 }
   },
+  "displayOptions": {
+    "showControlPoints": true,
+    "showAnchorPoints": true,
+    "showPositionAnchor": true,
+    "showBorder": true
+  },
   "animations": {
     "duration": 3,
     "loops": 0,

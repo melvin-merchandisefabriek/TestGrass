@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
-import Circle from './components/Circle';
 import UI from './components/UI';
 import Environment from './components/Environment';
 import Player from './components/Player';
+import Shape from './components/Shape';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -17,10 +17,10 @@ function App() {
 
   return (
     <div className="App">
-        <Circle cx={60} cy={60} r={30} strokeWidth={4} stroke="blue"/>
         <UI />
         <Environment />
         <Player />
+        <Shape filePath={process.env.PUBLIC_URL + '/data/circleTemplate.json'} />
     </div>
   );
 }

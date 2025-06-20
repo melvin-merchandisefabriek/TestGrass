@@ -7,6 +7,7 @@ import {
   updateAffectedSegments,
   loadShapeData
 } from '../utils/shape';
+import { mergeDisplayOptions } from '../utils/shape/displayUtils';
 
 // Default simple shape data for fallback
 const defaultShapeData = {
@@ -17,6 +18,12 @@ const defaultShapeData = {
   position: {
     svg: { x: 0, y: 0 },
     global: { x: 100, y: 100 }
+  },
+  displayOptions: {
+    showControlPoints: true,
+    showAnchorPoints: true,
+    showPositionAnchor: true,
+    showBorder: true
   },
   controlPoints: [
     { id: "cp-1", x: 50, y: 50, type: "anchor" },
@@ -160,7 +167,27 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
   
   // Render control points as small circles - memoized for performance
   const renderControlPoints = useMemo(() => {
+    // Use our utility to get full display options with defaults
+    const displayOptions = mergeDisplayOptions(shapeData.displayOptions);
+    const showControlPoints = displayOptions.showControlPoints;
+    const showAnchorPoints = displayOptions.showAnchorPoints;
+
+    // If both are hidden, return nothing
+    if (!showControlPoints && !showAnchorPoints) {
+      return null;
+    }
+    
     return shapeData.controlPoints.map(point => {
+      // Skip anchor points if they should be hidden
+      if (point.type === "anchor" && !showAnchorPoints) {
+        return null;
+      }
+      
+      // Skip control points if they should be hidden
+      if (point.type === "control" && !showControlPoints) {
+        return null;
+      }
+      
       // Use the animated values if available
       const animatedPoint = animatedControlPoints[point.id];
       const effectivePoint = animatedPoint ? 
@@ -180,25 +207,33 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
           strokeWidth="1"
         />
       );
-    });
-  }, [shapeData.controlPoints, animatedControlPoints, transformPoint]);
+    }).filter(Boolean); // Filter out null values
+  }, [shapeData.controlPoints, shapeData.displayOptions, animatedControlPoints, transformPoint]);
   
   // Render position anchor point (main anchor for the shape) - memoized for performance
   const renderPositionAnchor = useMemo(() => {
-    // Check if there's a specific anchor position defined
-    const anchorPosition = shapeData.position.anchor || { x: 0, y: 0 };
+    // Use our utility to get full display options with defaults
+    const displayOptions = mergeDisplayOptions(shapeData.displayOptions);
+    const showPositionAnchor = displayOptions.showPositionAnchor;
+    
+    if (!showPositionAnchor) {
+      return null;
+    }
+    
+    // Use animated position if available
+    const position = animatedPosition || shapeData.position.svg;
     
     return (
       <circle
-        cx={anchorPosition.x}
-        cy={anchorPosition.y}
+        cx={position.x}
+        cy={position.y}
         r={6}
         fill="yellow"
         stroke="black"
         strokeWidth="1"
       />
     );
-  }, [shapeData.position]);
+  }, [shapeData.position.svg, shapeData.displayOptions, animatedPosition]);
   
   // Animation update function
   const updateAnimationValues = (currentTime) => {
@@ -353,7 +388,7 @@ const Shape = ({ filePath, shapeData: providedShapeData }) => {
         height={shapeData.height}
         viewBox={calculateViewBox(shapeData.position.svg, shapeData.width, shapeData.height)} 
         xmlns="http://www.w3.org/2000/svg"
-        style={{ border: '1px dashed rgba(255, 255, 255, 0.3)' }}
+        style={{ border: mergeDisplayOptions(shapeData.displayOptions).showBorder ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none' }}
       >
         {/* If fillPath is true, render a single combined path with fill */}
         {shapeData.fillPath && (

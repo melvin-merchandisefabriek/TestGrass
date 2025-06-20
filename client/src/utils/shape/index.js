@@ -8,3 +8,4 @@ export * from './pathUtils';
 export * from './domUtils';
 export * from './shapeHelpers';
 export * from './dataUtils';
+export * from './displayUtils';
