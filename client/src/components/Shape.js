@@ -14,21 +14,55 @@ const exampleShapeData = {
     duration: 3, // Total animation duration in seconds
     loops: 0,    // 0 means infinite loop, any positive number means that many loops
     controlPointAnimations: {
-      "cp-1": {  // Animate control point with ID "cp-2"
-        keyframes: [
-          { time: 0, x: 50, y: 50 },   // Starting position (at 0 seconds)
-          { time: 1.5, x: 0, y: 50 },  // Position at 1 second
-          // { time: 2.3, x: 80, y: 90 },   // Position at 2.3 seconds
-          { time: 3.0, x: 50, y: 50 }   // End position (back to start for smooth looping)
-        ]
+      "cp-1": {  // Basic sine wave with expression
+        formula: {
+          x: {
+            // Custom mathematical expression for x
+            expression: "50 + 50 * sin(TWO_PI * n)",
+            // This is equivalent to the previous sine wave definition
+            // but now written as a direct expression
+          },
+          y: {
+            // Simple constant expression
+            expression: "50"
+          }
+        }
       },
-      // "cp-3": {  // Animate another control point
-      //   keyframes: [
-      //     { time: 0, x: 100, y: 100 },
-      //     { time: 1.5, x: 120, y: 120 },
-      //     { time: 3.0, x: 100, y: 100 }
-      //   ]
-      // }
+      "cp-3": {  // Complex combined waves
+        formula: {
+          x: {
+            // Combine multiple sine waves with different frequencies and amplitudes
+            expression: "100 + 15 * sin(TWO_PI * 2 * n) + 5 * sin(TWO_PI * 5 * n)",
+            // This creates a primary wave with smaller ripples for a more organic look
+          },
+          y: {
+            // Damped oscillation that decreases amplitude over time
+            expression: "100 + 20 * sin(TWO_PI * n) * (1 - 0.5 * n)",
+            // Oscillation that gradually reduces in amplitude
+          }
+        }
+      },
+      "cp-4": {  // Complex mathematical patterns with custom variables
+        formula: {
+          x: {
+            // Bouncing effect with elastic overshoot
+            expression: "150 + 30 * sin(TWO_PI * 2 * n) * exp(-5 * n)",
+            // This creates a spring-like motion that dampens over time
+          },
+          y: {
+            // Combined sinusoidal motion with custom variables
+            expression: "baseY + amp1 * sin(TWO_PI * freq1 * n) + amp2 * sin(TWO_PI * freq2 * n + phase)",
+            variables: {
+              baseY: 100,
+              amp1: 15,
+              freq1: 1,
+              amp2: 5,
+              freq2: 3,
+              phase: Math.PI / 2
+            }
+          }
+        }
+      }
     },
     positionAnimations: {
       global: { // Animate the global position
@@ -317,45 +351,170 @@ const Shape = ({ shapeData = exampleShapeData }) => {
   };
 
     // Placeholder functions for custom animation calculation
-  const calculateControlPointPosition = (pointId, animation, currentTime) => {
-    // Basic linear interpolation between keyframes
-    const keyframes = animation.keyframes;
-    if (!keyframes || keyframes.length < 2) {
-      if (keyframes && keyframes.length === 1) {
-        return { x: keyframes[0].x, y: keyframes[0].y };
-      }
+  // Function to safely evaluate mathematical expressions
+  const evaluateExpression = (expression, variables) => {
+    try {
+      // Create a safe function from the expression with provided variables
+      // This approach protects against code injection while allowing mathematical expressions
+      const safeFunction = new Function(...Object.keys(variables), `
+        "use strict";
+        // Only allow mathematical operations, no assignments or function calls except Math
+        return ${expression};
+      `);
+      
+      // Execute the function with the provided variables
+      return safeFunction(...Object.values(variables));
+    } catch (error) {
+      console.warn(`Error evaluating expression: ${expression}`, error);
       return null;
     }
-    
-    // Find the surrounding keyframes
-    let startKeyframe = keyframes[0];
-    let endKeyframe = keyframes[keyframes.length - 1];
-    
-    for (let i = 0; i < keyframes.length - 1; i++) {
-      if (keyframes[i].time <= currentTime && keyframes[i+1].time >= currentTime) {
-        startKeyframe = keyframes[i];
-        endKeyframe = keyframes[i+1];
-        break;
+  };
+
+  // Function to calculate values based on mathematical formulas
+  const calculateFormula = (formula, currentTime, duration) => {
+    if (!formula) return null;
+
+    // Create common variables available to all formulas
+    const variables = {
+      t: currentTime,                     // Current time in seconds
+      d: duration,                        // Total duration in seconds
+      n: currentTime / duration,          // Normalized time (0 to 1)
+      PI: Math.PI,
+      TWO_PI: 2 * Math.PI,
+      sin: Math.sin,
+      cos: Math.cos,
+      tan: Math.tan,
+      abs: Math.abs,
+      min: Math.min,
+      max: Math.max,
+      sqrt: Math.sqrt,
+      pow: Math.pow,
+      floor: Math.floor,
+      ceil: Math.ceil,
+      round: Math.round,
+      exp: Math.exp,
+      log: Math.log,
+      random: Math.random
+    };
+
+    // Simple predefined formula types for convenience
+    if (formula.type) {
+      switch (formula.type) {
+        case 'sine':
+          return evaluateExpression(
+            `${formula.baseValue} + ${formula.amplitude} * sin(TWO_PI * ${formula.frequency} * n + ${formula.phase || 0})`,
+            variables
+          );
+        
+        case 'cosine':
+          return evaluateExpression(
+            `${formula.baseValue} + ${formula.amplitude} * cos(TWO_PI * ${formula.frequency} * n + ${formula.phase || 0})`,
+            variables
+          );
+        
+        case 'linear':
+          return evaluateExpression(
+            `${formula.startValue} + (${formula.endValue} - ${formula.startValue}) * n`,
+            variables
+          );
+        
+        case 'constant':
+          return formula.value;
       }
     }
     
-    // If current time is before the first keyframe or after the last one,
-    // use the closest keyframe's values directly
-    if (currentTime <= keyframes[0].time) {
-      return { x: keyframes[0].x, y: keyframes[0].y };
-    } else if (currentTime >= keyframes[keyframes.length-1].time) {
-      return { x: keyframes[keyframes.length-1].x, y: keyframes[keyframes.length-1].y };
+    // If it's an expression string, evaluate it directly
+    if (formula.expression) {
+      // Add any custom variables defined in the formula
+      if (formula.variables) {
+        Object.entries(formula.variables).forEach(([key, value]) => {
+          variables[key] = value;
+        });
+      }
+      
+      return evaluateExpression(formula.expression, variables);
     }
     
-    // Calculate position by interpolating between keyframes
-    const timeDiff = endKeyframe.time - startKeyframe.time;
-    const timeProgress = (currentTime - startKeyframe.time) / timeDiff;
+    console.warn(`Invalid formula: ${JSON.stringify(formula)}`);
+    return null;
+  };
+
+  const calculateControlPointPosition = (pointId, animation, currentTime) => {
+    const result = { x: null, y: null };
+    const duration = shapeData.animations.duration;
     
-    // Linear interpolation between the two keyframes
-    const x = startKeyframe.x + (endKeyframe.x - startKeyframe.x) * timeProgress;
-    const y = startKeyframe.y + (endKeyframe.y - startKeyframe.y) * timeProgress;
+    // Check for formula-based animation
+    if (animation.formula) {
+      // Calculate X position if formula is provided
+      if (animation.formula.x) {
+        result.x = calculateFormula(animation.formula.x, currentTime, duration);
+      }
+      
+      // Calculate Y position if formula is provided
+      if (animation.formula.y) {
+        result.y = calculateFormula(animation.formula.y, currentTime, duration);
+      }
+    }
     
-    return { x, y };
+    // If we still need x or y values, try to get them from keyframes
+    if ((result.x === null || result.y === null) && animation.keyframes && animation.keyframes.length > 0) {
+      // Basic linear interpolation between keyframes
+      const keyframes = animation.keyframes;
+      
+      // Find the surrounding keyframes
+      let startKeyframe = keyframes[0];
+      let endKeyframe = keyframes[keyframes.length - 1];
+      
+      // Single keyframe case
+      if (keyframes.length === 1) {
+        if (result.x === null) result.x = keyframes[0].x;
+        if (result.y === null) result.y = keyframes[0].y;
+      } else {
+        // Multiple keyframes
+        for (let i = 0; i < keyframes.length - 1; i++) {
+          if (keyframes[i].time <= currentTime && keyframes[i+1].time >= currentTime) {
+            startKeyframe = keyframes[i];
+            endKeyframe = keyframes[i+1];
+            break;
+          }
+        }
+        
+        // If current time is before the first keyframe or after the last one,
+        // use the closest keyframe's values directly
+        if (currentTime <= keyframes[0].time) {
+          if (result.x === null) result.x = keyframes[0].x;
+          if (result.y === null) result.y = keyframes[0].y;
+        } else if (currentTime >= keyframes[keyframes.length-1].time) {
+          if (result.x === null) result.x = keyframes[keyframes.length-1].x;
+          if (result.y === null) result.y = keyframes[keyframes.length-1].y;
+        } else {
+          // Calculate position by interpolating between keyframes
+          const timeDiff = endKeyframe.time - startKeyframe.time;
+          const timeProgress = (currentTime - startKeyframe.time) / timeDiff;
+          
+          // Linear interpolation between the two keyframes, only for properties not set by formula
+          if (result.x === null && startKeyframe.x !== undefined && endKeyframe.x !== undefined) {
+            result.x = startKeyframe.x + (endKeyframe.x - startKeyframe.x) * timeProgress;
+          }
+          
+          if (result.y === null && startKeyframe.y !== undefined && endKeyframe.y !== undefined) {
+            result.y = startKeyframe.y + (endKeyframe.y - startKeyframe.y) * timeProgress;
+          }
+        }
+      }
+    }
+    
+    // If we successfully calculated at least one value
+    if (result.x !== null || result.y !== null) {
+      // Fill in any missing values with defaults from the first control point
+      const originalPoint = shapeData.controlPoints.find(cp => cp.id === pointId);
+      if (result.x === null && originalPoint) result.x = originalPoint.x;
+      if (result.y === null && originalPoint) result.y = originalPoint.y;
+      
+      return result;
+    }
+    
+    return null;
   };
   
   const calculateGlobalPosition = (animation, currentTime) => {
