@@ -1,10 +1,10 @@
 import React from 'react';
-import Menu from './Menu';
+import MenuButton from './MenuButton';
 
 const UI = () => {
   return (
     <div className="ui-container">
-      <Menu />
+      <MenuButton />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 {
-  "id": "menu-square",
-  "name": "Menu Square",
+  "id": "menu-button-square",
+  "name": "Menu Button Square",
   "width": 120,
   "height": 40,
   "displayOptions": {
