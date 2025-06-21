@@ -11,7 +11,7 @@
   },
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 200, "y": 300 }
+    "global": { "x": 400, "y": 300 }
   },
   "controlPoints": [
     { "id": "left-point", "x": 10, "y": 100, "type": "anchor" },
@@ -57,13 +57,12 @@
       "style": { "stroke": "#4caf50", "strokeWidth": 2 }
     }
   ],
-  "fillPath": false,
-  "closePath": false,
+  "fillPath": true,
+  "closePath": true,
   "style": {
     "fill": "rgba(120, 200, 255, 0.7)",
     "fillOpacity": 0.5,
     "stroke": "#4fc3f7",
     "strokeWidth": 2
-  },
-  "filePath": "/data/halfCircle.json"
+  }
 }

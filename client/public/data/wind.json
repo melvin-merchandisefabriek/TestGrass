@@ -2,7 +2,7 @@
   "version": 1,
   "description": "Wind effect for the player shape",
   "modifyPosition": {
-    "x": 100,
+    "x": 0,
     "y": 0
   },
   "modifyControlPoints": {

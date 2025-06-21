@@ -20,7 +20,7 @@ function App() {
         <UI />
         <Environment />
         <Player />
-        <Shape filePath={process.env.PUBLIC_URL + '/data/circleTemplate.json'} />
+        {/* <Shape filePath={process.env.PUBLIC_URL + '/data/circleTemplate.json'} /> */}
     </div>
   );
 }

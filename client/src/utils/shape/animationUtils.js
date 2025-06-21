@@ -168,43 +168,12 @@ export const calculateControlPointPosition = (pointId, animation, currentTime, d
  * Calculates the animated global position
  * @param {Object} animation - Global position animation configuration
  * @param {number} currentTime - Current animation time
+ * @param {number} duration - Total animation duration
  * @returns {Object|null} New global position {x, y} or null
  */
-export const calculateGlobalPosition = (animation, currentTime) => {
-  // Use the same logic as control points for now
-  const keyframes = animation.keyframes;
-  if (!keyframes || keyframes.length < 2) {
-    if (keyframes && keyframes.length === 1) {
-      return { x: keyframes[0].x, y: keyframes[0].y };
-    }
-    return null;
-  }
-  
-  // Find the surrounding keyframes
-  let startKeyframe = keyframes[0];
-  let endKeyframe = keyframes[keyframes.length - 1];
-  
-  for (let i = 0; i < keyframes.length - 1; i++) {
-    if (keyframes[i].time <= currentTime && keyframes[i+1].time >= currentTime) {
-      startKeyframe = keyframes[i];
-      endKeyframe = keyframes[i+1];
-      break;
-    }
-  }
-  
-  // Handle boundary cases
-  if (currentTime <= keyframes[0].time) {
-    return { x: keyframes[0].x, y: keyframes[0].y };
-  } else if (currentTime >= keyframes[keyframes.length-1].time) {
-    return { x: keyframes[keyframes.length-1].x, y: keyframes[keyframes.length-1].y };
-  }
-  
-  // Linear interpolation
-  const timeDiff = endKeyframe.time - startKeyframe.time;
-  const timeProgress = (currentTime - startKeyframe.time) / timeDiff;
-  
-  const x = startKeyframe.x + (endKeyframe.x - startKeyframe.x) * timeProgress;
-  const y = startKeyframe.y + (endKeyframe.y - startKeyframe.y) * timeProgress;
-  
-  return { x, y };
+export const calculateGlobalPosition = (animation, currentTime, duration) => {
+  // Treat global position as a special case of control point animation
+  // Create a default point with {x:0, y:0} to use as the base
+  const defaultPoint = { id: 'global', x: 0, y: 0 };
+  return calculateControlPointPosition('global', animation, currentTime, duration, [defaultPoint]);
 };
