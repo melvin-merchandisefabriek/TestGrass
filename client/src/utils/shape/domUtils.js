@@ -107,8 +107,14 @@ export const updateAffectedSegments = (
     if (fillPathElement) {
       // Generate the path data using the updated control points
       let pathData = '';
+      let firstPoint = null;
       
-      shapeData.segments.forEach(segment => {
+      // Build the path directly using the segments in order
+      // This is better than collecting points and then creating a path
+      let firstSegmentAdded = false;
+      
+      // Process each segment in order
+      shapeData.segments.forEach((segment) => {
         const points = segment.points.map(pointId => {
           // Get original point
           const originalPoint = shapeData.controlPoints.find(cp => cp.id === pointId);
@@ -127,13 +133,18 @@ export const updateAffectedSegments = (
           };
         });
         
+        // Add path commands based on segment type
         if (segment.type === 'line') {
           const start = points[0];
           const end = points[1];
           
-          if (pathData === '') {
-            pathData += `M ${start.x} ${start.y} `;
+          if (!firstSegmentAdded) {
+            // First segment starts with a Move command
+            pathData += `M ${start.x} ${start.y} L ${end.x} ${end.y} `;
+            firstPoint = start;
+            firstSegmentAdded = true;
           } else {
+            // Subsequent segments continue from previous point
             pathData += `L ${end.x} ${end.y} `;
           }
         } else if (segment.type === 'bezier') {
@@ -142,10 +153,15 @@ export const updateAffectedSegments = (
           const control2 = points[2];
           const end = points[3];
           
-          if (pathData === '') {
-            pathData += `M ${start.x} ${start.y} `;
+          if (!firstSegmentAdded) {
+            // First segment starts with a Move command
+            pathData += `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+            firstPoint = start;
+            firstSegmentAdded = true;
+          } else {
+            // Subsequent segments continue from previous point with just the curve part
+            pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
           }
-          pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
         }
       });
       

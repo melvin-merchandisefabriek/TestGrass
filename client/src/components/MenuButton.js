@@ -8,11 +8,11 @@ import Shape from './Shape';
 const MenuButton = () => {
   // Path to the menu button square shape JSON file
   const menuButtonSquarePath = process.env.PUBLIC_URL + '/data/menuButtonSquare.json';
-  const windEffectPath = process.env.PUBLIC_URL + '/data/wind.json';
+  const placeholderPath = process.env.PUBLIC_URL + '/data/placeholder.json';
 
   return (
     <div className="menu-button-container">
-      <Shape filePath={menuButtonSquarePath} modificationsPath={windEffectPath}/>
+      <Shape filePath={menuButtonSquarePath} modificationsPath={placeholderPath}/>
     </div>
   );
 };
