@@ -43,6 +43,20 @@ export const applyShapeModifications = (shape, modifications) => {
     });
   }
   
+  // Apply main style from modifications if present
+  if (modifications.style) {
+    modifiedShape.style = { ...modifiedShape.style, ...modifications.style };
+  }
+  
+  // Apply fillPath and closePath from modifications if present
+  if (typeof modifications.fillPath !== 'undefined') {
+    modifiedShape.fillPath = modifications.fillPath;
+  }
+  
+  if (typeof modifications.closePath !== 'undefined') {
+    modifiedShape.closePath = modifications.closePath;
+  }
+  
   // Set up animations from the modifications
   if (modifications.animations) {
     // Create or update animations structure in the shape data

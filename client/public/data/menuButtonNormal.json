@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "description": "Normal state for menu button with smooth collapse animation",
+  "animations": {
+    "duration": 0.5,
+    "loops": 1,
+    "controlPointAnimations": {
+      "sq-1": {
+        "formula": {
+          "x": {
+            "expression": "0 + (15 - 0) * n"
+          },
+          "y": {
+            "expression": "0 + (15 - 0) * n"
+          }
+        }
+      },
+      "sq-2": {
+        "formula": {
+          "x": {
+            "expression": "120 - (120 - 105) * n"
+          },
+          "y": {
+            "expression": "0 + (15 - 0) * n"
+          }
+        }
+      },
+      "sq-3": {
+        "formula": {
+          "x": {
+            "expression": "120 - (120 - 105) * n"
+          },
+          "y": {
+            "expression": "40 - (40 - 25) * n"
+          }
+        }
+      },
+      "sq-4": {
+        "formula": {
+          "x": {
+            "expression": "0 + (15 - 0) * n"
+          },
+          "y": {
+            "expression": "40 - (40 - 25) * n"
+          }
+        }
+      }
+    }
+  },
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(60, 140, 220, 0.0)",
+    "stroke": "#FFFFFF",
+    "strokeWidth": 0
+  }
+}

@@ -7,7 +7,7 @@
     "showControlPoints": false,
     "showAnchorPoints": false,
     "showPositionAnchor": false,
-    "showBorder": true
+    "showBorder": false
   },
   "position": {
     "svg": { "x": 0, "y": 0 },
@@ -24,33 +24,32 @@
       "id": "sq-seg-1",
       "type": "line",
       "points": ["sq-1", "sq-2"],
-      "style": { "stroke": "#4fc3f7", "strokeWidth": 2 }
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
     },
     {
       "id": "sq-seg-2",
       "type": "line",
       "points": ["sq-2", "sq-3"],
-      "style": { "stroke": "#4fc3f7", "strokeWidth": 2 }
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
     },
     {
       "id": "sq-seg-3",
       "type": "line",
       "points": ["sq-3", "sq-4"],
-      "style": { "stroke": "#4fc3f7", "strokeWidth": 2 }
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
     },
     {
       "id": "sq-seg-4",
       "type": "line",
       "points": ["sq-4", "sq-1"],
-      "style": { "stroke": "#4fc3f7", "strokeWidth": 2 }
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
     }
   ],
   "fillPath": true,
   "closePath": true,
   "style": {
-    "fill": "rgba(79, 195, 247, 0.3)",
-    "fillOpacity": 0.5,
-    "stroke": "#4fc3f7",
-    "strokeWidth": 2
+    "fill": "rgba(79, 195, 247, 0.0)",
+    "stroke": "#FFFFFF",
+    "strokeWidth": 1
   }
 }

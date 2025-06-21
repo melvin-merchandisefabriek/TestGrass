@@ -61,18 +61,43 @@ const defaultShapeData = {
   closePath: true,
   style: {
     fill: "rgba(120, 200, 255, 0.3)",
-    fillOpacity: 0.5,
     stroke: "#ffffff",
     strokeWidth: 1
   }
 };
 
-const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData }) => {
+const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shapeModifications, onClick }) => {
   // State for storing the loaded shape data
   const [shapeData, setShapeData] = useState(providedShapeData || defaultShapeData);
   
+  // Apply in-memory modifications when they change
+  useEffect(() => {
+    if (shapeModifications && shapeData) {
+      // Dynamically import to avoid circular dependencies
+      const applyModifications = async () => {
+        try {
+          const { applyShapeModifications } = await import('../utils/shape/modificationUtils');
+          
+          // Apply the modifications to the current shape data
+          const modifiedData = applyShapeModifications(shapeData, shapeModifications);
+          console.log('Applied in-memory modifications:', modifiedData);
+          setShapeData(modifiedData);
+        } catch (error) {
+          console.error('Error applying in-memory modifications:', error);
+        }
+      };
+      
+      applyModifications();
+    }
+  }, [shapeModifications]);
+  
   // Load shape data from file path if provided
   useEffect(() => {
+    // Skip loading from file if we're using in-memory modifications
+    if (shapeModifications) {
+      return;
+    }
+    
     if (filePath) {
       const loadData = async () => {
         try {
@@ -114,7 +139,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData }) =>
       
       loadData();
     }
-  }, [filePath, modificationsPath, providedShapeData]);
+  }, [filePath, modificationsPath, providedShapeData, shapeModifications]);
   // State for animated control points and position
   const [animatedControlPoints, setAnimatedControlPoints] = useState({});
   const [animatedPosition, setAnimatedPosition] = useState(null);
@@ -414,11 +439,14 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData }) =>
         viewBox={calculateViewBox(shapeData.position.svg, shapeData.width, shapeData.height)} 
         xmlns="http://www.w3.org/2000/svg"
         style={{ border: mergeDisplayOptions(shapeData.displayOptions).showBorder ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none' }}
+        onClick={onClick}
       >
         {/* If fillPath is true, render a single combined path with fill */}
         {shapeData.fillPath && (
           <path
             className="shape-fill-path"
+            onClick={onClick}
+            style={{ cursor: onClick ? 'pointer' : 'default' }}
             d={(() => {
               let pathData = '';
               let firstPoint = null;
@@ -517,8 +545,8 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData }) =>
               return pathData;
             })()}
             fill={shapeData.style.fill || "none"}
-            fillOpacity={shapeData.style.fillOpacity || 1}
-            stroke="none"
+            stroke={shapeData.style.stroke}
+            strokeWidth={shapeData.style.strokeWidth}
           />
         )}
         

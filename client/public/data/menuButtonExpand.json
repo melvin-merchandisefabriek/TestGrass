@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "description": "Expand menu button to a larger size when clicked",
+  "animations": {
+    "duration": 0.5,
+    "loops": 1,
+    "controlPointAnimations": {
+      "sq-1": {
+        "formula": {
+          "x": {
+            "expression": "15 - 15 * min(1, n * 2)"
+          },
+          "y": {
+            "expression": "15 - 15 * min(1, n * 2)"
+          }
+        }
+      },
+      "sq-2": {
+        "formula": {
+          "x": {
+            "expression": "105 + 15 * min(1, n * 2)"
+          },
+          "y": {
+            "expression": "15 - 15 * min(1, n * 2)"
+          }
+        }
+      },
+      "sq-3": {
+        "formula": {
+          "x": {
+            "expression": "105 + 15 * min(1, n * 2)"
+          },
+          "y": {
+            "expression": "25 + 15 * min(1, n * 2)"
+          }
+        }
+      },
+      "sq-4": {
+        "formula": {
+          "x": {
+            "expression": "15 - 15 * min(1, n * 2)"
+          },
+          "y": {
+            "expression": "25 + 15 * min(1, n * 2)"
+          }
+        }
+      }
+    }
+  },
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(100, 180, 255, 0.1)",
+    "stroke": "#FFFFFF",
+    "strokeWidth": 0
+  }
+}
