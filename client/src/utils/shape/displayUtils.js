@@ -11,7 +11,8 @@ export const getDefaultDisplayOptions = () => {
     showControlPoints: true,
     showAnchorPoints: true,
     showPositionAnchor: true,
-    showBorder: true
+    showBorder: true,
+    showControlPointNames: false // Off by default as it can be visually noisy
   };
 };
 
@@ -22,7 +23,13 @@ export const getDefaultDisplayOptions = () => {
  */
 export const mergeDisplayOptions = (options) => {
   const defaults = getDefaultDisplayOptions();
-  return { ...defaults, ...(options || {}) };
+  
+  // Handle null/undefined options or empty object
+  if (!options || Object.keys(options).length === 0) {
+    return defaults;
+  }
+  
+  return { ...defaults, ...options };
 };
 
 /**
@@ -35,7 +42,8 @@ export const createUniformDisplayOptions = (value = true) => {
     showControlPoints: value,
     showAnchorPoints: value,
     showPositionAnchor: value,
-    showBorder: value
+    showBorder: value,
+    showControlPointNames: value
   };
 };
 

@@ -72,8 +72,27 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
   
   // Apply in-memory modifications when they change
   useEffect(() => {
-    if (shapeModifications && shapeData) {
+    if (shapeModifications && filePath) {
       // Dynamically import to avoid circular dependencies
+      const applyModifications = async () => {
+        try {
+          const { applyShapeModifications } = await import('../utils/shape/modificationUtils');
+          
+          // Always reload the base shape to ensure we start fresh
+          const baseShape = await loadShapeData(filePath);
+          
+          // Apply the modifications to the freshly loaded base shape data
+          const modifiedData = applyShapeModifications(baseShape, shapeModifications);
+          console.log('Applied in-memory modifications:', modifiedData);
+          setShapeData(modifiedData);
+        } catch (error) {
+          console.error('Error applying in-memory modifications:', error);
+        }
+      };
+      
+      applyModifications();
+    } else if (shapeModifications && shapeData) {
+      // Fall back to using current shapeData if no filePath is provided
       const applyModifications = async () => {
         try {
           const { applyShapeModifications } = await import('../utils/shape/modificationUtils');
@@ -89,7 +108,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
       
       applyModifications();
     }
-  }, [shapeModifications]);
+  }, [shapeModifications, filePath]);
   
   // Load shape data from file path if provided
   useEffect(() => {
@@ -285,6 +304,58 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
     );
   }, [shapeData.position.svg, shapeData.displayOptions, animatedPosition]);
   
+  // Render control point names - memoized for performance
+  const renderControlPointNames = useMemo(() => {
+    // Use our utility to get full display options with defaults
+    const displayOptions = mergeDisplayOptions(shapeData.displayOptions);
+    const showControlPointNames = displayOptions.showControlPointNames;
+    const showControlPoints = displayOptions.showControlPoints;
+    const showAnchorPoints = displayOptions.showAnchorPoints;
+
+    // If names are not shown, or no points are shown, return nothing
+    if (!showControlPointNames || (!showControlPoints && !showAnchorPoints)) {
+      return null;
+    }
+    
+    return shapeData.controlPoints.map(point => {
+      // Skip anchor points if they should be hidden
+      if (point.type === "anchor" && !showAnchorPoints) {
+        return null;
+      }
+      
+      // Skip control points if they should be hidden
+      if (point.type === "control" && !showControlPoints) {
+        return null;
+      }
+      
+      // Use the animated values if available
+      const animatedPoint = animatedControlPoints[point.id];
+      const effectivePoint = animatedPoint ? 
+        { ...point, ...animatedPoint } :
+        point;
+      
+      const transformedPoint = transformPoint(effectivePoint);
+      
+      return (
+        <text
+          key={`name-${point.id}`}
+          x={transformedPoint.x + 6} // Offset slightly from the point
+          y={transformedPoint.y - 6}
+          fontSize="10"
+          fill="#ffffff"
+          stroke="#000000"
+          strokeWidth="0.5"
+          paintOrder="stroke"
+        >
+          {point.id}
+        </text>
+      );
+    }).filter(Boolean); // Filter out null values
+  }, [shapeData.controlPoints, shapeData.displayOptions, animatedControlPoints, transformPoint]);
+
+  // State for animated style properties
+  const [animatedStyle, setAnimatedStyle] = useState({});
+  
   // Animation update function
   const updateAnimationValues = (currentTime) => {
     // Track which segments need to be redrawn
@@ -313,6 +384,26 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
         if (animatedValues) {
           newAnimatedControlPoints[pointId] = animatedValues;
         }
+      });
+    }
+    
+    // Process style animations if present
+    if (shapeData.animations?.styleAnimations) {
+      const { calculateStyleProperties } = require('../utils/shape/animationUtils');
+      const newAnimatedStyle = calculateStyleProperties(
+        shapeData.animations.styleAnimations,
+        currentTime,
+        shapeData.animations.duration
+      );
+      
+      // Update animated style if changed
+      if (!deepEquals(animatedStyle, newAnimatedStyle)) {
+        setAnimatedStyle(newAnimatedStyle);
+      }
+      
+      // All segments are potentially affected by style changes
+      shapeData.segments.forEach(segment => {
+        affectedSegments.add(segment.id);
       });
     }
     
@@ -436,7 +527,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
       <svg 
         width={shapeData.width} 
         height={shapeData.height}
-        viewBox={calculateViewBox(shapeData.position.svg, shapeData.width, shapeData.height)} 
+        viewBox={calculateViewBox(shapeData.position.svg, shapeData.width, shapeData.height, shapeData)} 
         xmlns="http://www.w3.org/2000/svg"
         style={{ border: mergeDisplayOptions(shapeData.displayOptions).showBorder ? '1px dashed rgba(255, 255, 255, 0.3)' : 'none' }}
         onClick={onClick}
@@ -450,11 +541,6 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
             d={(() => {
               let pathData = '';
               let firstPoint = null;
-              
-              // Log the shape ID and segments for menu-square
-              if (shapeData.id === 'menu-square') {
-                console.log('Building path for menu-square:', JSON.stringify(shapeData.segments, null, 2));
-              }
               
               // First, extract all points from all segments to build a proper path
               const allPoints = [];
@@ -488,13 +574,55 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
               
               // Now build the path with the collected points
               if (allPoints.length > 0) {
-                // Start the path with the first point
-                pathData = `M ${allPoints[0].x} ${allPoints[0].y} `;
-                firstPoint = allPoints[0];
-                
-                // Add line segments to each subsequent point
-                for (let i = 1; i < allPoints.length; i++) {
-                  pathData += `L ${allPoints[i].x} ${allPoints[i].y} `;
+                // For triangle-shape, let's use the actual bezier curves instead of simplified lines
+                if (shapeData.id === 'triangle-shape') {
+                  // Start with first point
+                  pathData = '';
+                  
+                  // Process each segment to preserve bezier curves
+                  shapeData.segments.forEach((segment, index) => {
+                    const points = segment.points.map(pointId => {
+                      const point = findPoint(pointId);
+                      return transformPoint(point);
+                    });
+                    
+                    if (index === 0) {
+                      // First segment - start with a move command
+                      if (segment.type === 'line') {
+                        const start = points[0];
+                        const end = points[1];
+                        pathData += `M ${start.x} ${start.y} L ${end.x} ${end.y} `;
+                      } else if (segment.type === 'bezier') {
+                        const start = points[0];
+                        const control1 = points[1];
+                        const control2 = points[2];
+                        const end = points[3];
+                        pathData += `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                      }
+                    } else {
+                      // Subsequent segments - continue the path
+                      if (segment.type === 'line') {
+                        const end = points[1];
+                        pathData += `L ${end.x} ${end.y} `;
+                      } else if (segment.type === 'bezier') {
+                        const control1 = points[1];
+                        const control2 = points[2];
+                        const end = points[3];
+                        pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                      }
+                    }
+                  });
+                  
+                  console.log(`Generated bezier-preserving path for triangle: ${pathData}`);
+                } else {
+                  // For other shapes, use the original simplified line-based path
+                  pathData = `M ${allPoints[0].x} ${allPoints[0].y} `;
+                  firstPoint = allPoints[0];
+                  
+                  // Add line segments to each subsequent point
+                  for (let i = 1; i < allPoints.length; i++) {
+                    pathData += `L ${allPoints[i].x} ${allPoints[i].y} `;
+                  }
                 }
               } else {
                 // If no points were extracted, fall back to the original method
@@ -511,11 +639,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
                     } else {
                       pathData += `L ${end.x} ${end.y} `;
                     }
-                    
-                    // Log each line segment for menu-square
-                    if (shapeData.id === 'menu-square') {
-                      console.log(`Segment ${index} (${segment.id}): Line from (${start.x}, ${start.y}) to (${end.x}, ${end.y})`);
-                    }
+
                   } else if (segment.type === 'bezier') {
                     const start = points[0];
                     const control1 = points[1];
@@ -544,9 +668,9 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
               
               return pathData;
             })()}
-            fill={shapeData.style.fill || "none"}
-            stroke={shapeData.style.stroke}
-            strokeWidth={shapeData.style.strokeWidth}
+            fill={animatedStyle.fill || shapeData.style.fill || "none"}
+            stroke={animatedStyle.stroke || shapeData.style.stroke}
+            strokeWidth={animatedStyle.strokeWidth || shapeData.style.strokeWidth}
           />
         )}
         
@@ -558,6 +682,9 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
         
         {/* Render control points */}
         {renderControlPoints}
+        
+        {/* Render control point names */}
+        {renderControlPointNames}
       </svg>
     </div>
   );

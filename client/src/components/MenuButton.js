@@ -93,20 +93,7 @@ const MenuButton = () => {
         onClick={handleClick}
       />
       {isExpanded && (
-        <div className="menu-content" style={{ 
-          position: 'absolute',
-          top: '100%',
-          left: 0,
-          padding: '10px',
-          backgroundColor: 'rgba(40, 120, 200, 0.9)',
-          borderRadius: '5px',
-          marginTop: '5px',
-          zIndex: 10,
-          color: 'white'
-        }}>
-          <div>Menu Item 1</div>
-          <div>Menu Item 2</div>
-          <div>Menu Item 3</div>
+        <div className="menu-content">
         </div>
       )}
     </div>

@@ -1,0 +1,56 @@
+{
+  "id": "triangle-shape",
+  "name": "Triangle Shape",
+  "viewBox": "0 0 200 200",
+  "width": 200,
+  "height": 200,
+  "displayOptions": {
+    "showControlPoints": true,
+    "showAnchorPoints": true,
+    "showPositionAnchor": false,
+    "showBorder": true,
+    "showControlPointNames": true
+  },
+  "position": {
+    "svg": { "x": 0, "y": 0 },
+    "global": { "x": 250, "y": 150 }
+  },
+  "controlPoints": [
+    { "id": "tri-top", "x": 100, "y": 20, "type": "anchor" },
+    { "id": "tri-right", "x": 180, "y": 180, "type": "anchor" },
+    { "id": "tri-left", "x": 20, "y": 180, "type": "anchor" },
+    
+    { "id": "tri-top-right-c1", "x": 130, "y": 50, "type": "control" },
+    { "id": "tri-top-right-c2", "x": 160, "y": 120, "type": "control" },
+    
+    { "id": "tri-left-top-c1", "x": 40, "y": 120, "type": "control" },
+    { "id": "tri-left-top-c2", "x": 70, "y": 50, "type": "control" }
+  ],
+  "segments": [
+    {
+      "id": "tri-top-right",
+      "type": "bezier",
+      "points": ["tri-top", "tri-top-right-c1", "tri-top-right-c2", "tri-right"],
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
+    },
+    {
+      "id": "tri-right-left",
+      "type": "line",
+      "points": ["tri-right", "tri-left"],
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
+    },
+    {
+      "id": "tri-left-top",
+      "type": "bezier",
+      "points": ["tri-left", "tri-left-top-c1", "tri-left-top-c2", "tri-top"],
+      "style": { "stroke": "#FFFFFF", "strokeWidth": 1 }
+    }
+  ],
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(255, 140, 0, 0.5)",
+    "stroke": "#FFFFFF",
+    "strokeWidth": 1
+  }
+}

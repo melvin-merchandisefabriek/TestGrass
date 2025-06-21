@@ -1,6 +1,9 @@
 {
   "version": 1,
   "description": "Normal state for menu button with smooth collapse animation",
+  "viewBox": "0 0 200 300",
+  "width": 200,
+  "height": 300,
   "animations": {
     "duration": 0.5,
     "loops": 1,
@@ -8,50 +11,53 @@
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "0 + (15 - 0) * n"
+            "expression": "15"
           },
           "y": {
-            "expression": "0 + (15 - 0) * n"
+            "expression": "15"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "120 - (120 - 105) * n"
+            "expression": "185"
           },
           "y": {
-            "expression": "0 + (15 - 0) * n"
+            "expression": "15"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "120 - (120 - 105) * n"
+            "expression": "185"
           },
           "y": {
-            "expression": "40 - (40 - 25) * n"
+            "expression": "230 - 205 * n"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "0 + (15 - 0) * n"
+            "expression": "15"
           },
           "y": {
-            "expression": "40 - (40 - 25) * n"
+            "expression": "230 - 205 * n"
           }
         }
       }
+    },
+    "styleAnimations": {
+      "fill": "rgba(79, 195, 247, ${0.1 * (1-n)})"
     }
   },
   "fillPath": true,
   "closePath": true,
   "style": {
-    "fill": "rgba(60, 140, 220, 0.0)",
+    "fill": "rgba(79, 195, 247, 0.1)",
     "stroke": "#FFFFFF",
-    "strokeWidth": 0
+    "strokeWidth": 1
   }
 }

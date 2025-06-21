@@ -1,17 +1,19 @@
 {
   "id": "menu-button-square",
   "name": "Menu Button Square",
+  "viewBox": "0 0 120 40",
   "width": 120,
   "height": 40,
   "displayOptions": {
     "showControlPoints": false,
     "showAnchorPoints": false,
     "showPositionAnchor": false,
-    "showBorder": false
+    "showBorder": false,
+    "showControlPointNames": false
   },
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 500, "y": 50 }
+    "global": { "x": 750, "y": 15 }
   },
   "controlPoints": [
     { "id": "sq-1", "x": 10, "y": 10, "type": "anchor" },

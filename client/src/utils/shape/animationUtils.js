@@ -3,6 +3,36 @@
  */
 
 /**
+ * Get standard animation variables for formulas
+ * @param {number} currentTime - Current time in seconds
+ * @param {number} duration - Total animation duration in seconds
+ * @returns {Object} Variables for animation formulas
+ */
+export const getAnimationVariables = (currentTime, duration) => {
+  return {
+    t: currentTime,                     // Current time in seconds
+    d: duration,                        // Total duration in seconds
+    n: currentTime / duration,          // Normalized time (0 to 1)
+    PI: Math.PI,
+    TWO_PI: 2 * Math.PI,
+    sin: Math.sin,
+    cos: Math.cos,
+    tan: Math.tan,
+    abs: Math.abs,
+    min: Math.min,
+    max: Math.max,
+    sqrt: Math.sqrt,
+    pow: Math.pow,
+    floor: Math.floor,
+    ceil: Math.ceil,
+    round: Math.round,
+    exp: Math.exp,
+    log: Math.log,
+    random: Math.random
+  };
+};
+
+/**
  * Safely evaluates mathematical expressions
  * @param {string} expression - Mathematical expression to evaluate
  * @param {Object} variables - Variables to use in the expression
@@ -37,27 +67,7 @@ export const calculateFormula = (formula, currentTime, duration) => {
   if (!formula) return null;
 
   // Create common variables available to all formulas
-  const variables = {
-    t: currentTime,                     // Current time in seconds
-    d: duration,                        // Total duration in seconds
-    n: currentTime / duration,          // Normalized time (0 to 1)
-    PI: Math.PI,
-    TWO_PI: 2 * Math.PI,
-    sin: Math.sin,
-    cos: Math.cos,
-    tan: Math.tan,
-    abs: Math.abs,
-    min: Math.min,
-    max: Math.max,
-    sqrt: Math.sqrt,
-    pow: Math.pow,
-    floor: Math.floor,
-    ceil: Math.ceil,
-    round: Math.round,
-    exp: Math.exp,
-    log: Math.log,
-    random: Math.random
-  };
+  const variables = getAnimationVariables(currentTime, duration);
 
   // Only support expression-based formulas
   if (formula.expression) {
@@ -87,6 +97,49 @@ export const calculateFormula = (formula, currentTime, duration) => {
  * @param {Array} controlPoints - Array of control point definitions
  * @returns {Object|null} New position {x, y} or null if no animation
  */
+/**
+ * Processes template strings with animation expressions
+ * @param {string} template - Template string with ${...} expressions
+ * @param {Object} variables - Animation variables to use
+ * @returns {string} Processed string with evaluated expressions
+ */
+export const processStyleTemplate = (template, variables) => {
+  if (!template || typeof template !== 'string' || !template.includes('${')) {
+    return template;
+  }
+  
+  try {
+    // Replace ${...} expressions with evaluated results
+    return template.replace(/\${(.*?)}/g, (match, expression) => {
+      const result = evaluateExpression(expression, variables);
+      return result !== null ? result : 0;
+    });
+  } catch (error) {
+    console.error('Error processing style template:', error);
+    return template;
+  }
+};
+
+/**
+ * Calculates animated style properties based on templates
+ * @param {Object} styleAnimations - Style animation templates
+ * @param {number} currentTime - Current time in seconds
+ * @param {number} duration - Total animation duration in seconds
+ * @returns {Object} Animated style properties
+ */
+export const calculateStyleProperties = (styleAnimations, currentTime, duration) => {
+  if (!styleAnimations) return {};
+  
+  const variables = getAnimationVariables(currentTime, duration);
+  const result = {};
+  
+  Object.entries(styleAnimations).forEach(([property, template]) => {
+    result[property] = processStyleTemplate(template, variables);
+  });
+  
+  return result;
+};
+
 export const calculateControlPointPosition = (pointId, animation, currentTime, duration, controlPoints) => {
   const result = { x: null, y: null };
   

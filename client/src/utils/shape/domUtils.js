@@ -183,9 +183,33 @@ export const updateAffectedSegments = (
  * @param {Object} svgPosition - Position within the SVG coordinate system
  * @param {number} width - Width of the shape
  * @param {number} height - Height of the shape
+ * @param {Object} [shapeData] - Complete shape data including animations (optional)
  * @returns {string} SVG viewBox attribute value
  */
-export const calculateViewBox = (svgPosition, width, height) => {
-  // No padding - use exact dimensions as specified in the JSON
-  return `${svgPosition.x} ${svgPosition.y} ${width} ${height}`;
+export const calculateViewBox = (svgPosition, width, height, shapeData) => {
+  // Default padding (small margin around the shape)
+  const DEFAULT_PADDING = 10;
+  
+  // If shapeData has an explicit viewBox property, use that directly
+  if (shapeData && shapeData.viewBox) {
+    // When viewBox is explicit, the SVG position should be treated as an offset from the origin
+    // of the viewBox coordinate system. The yellow dot should be positioned at svgPosition
+    // within the viewBox coordinate system.
+    return shapeData.viewBox;
+  }
+  
+  // If no shape data is provided, use default dimensions with small padding
+  if (!shapeData) {
+    return `${-svgPosition.x - DEFAULT_PADDING} ${-svgPosition.y - DEFAULT_PADDING} ${width + DEFAULT_PADDING * 2} ${height + DEFAULT_PADDING * 2}`;
+  }
+  
+  // Otherwise, use a simple viewBox based on dimensions with padding
+  // Position the viewBox so that the position.svg coordinates are in the top-left
+  const padding = DEFAULT_PADDING;
+  const viewBoxX = -svgPosition.x - padding;
+  const viewBoxY = -svgPosition.y - padding;
+  const viewBoxWidth = width + (padding * 2);
+  const viewBoxHeight = height + (padding * 2);
+  
+  return `${viewBoxX} ${viewBoxY} ${viewBoxWidth} ${viewBoxHeight}`;
 };

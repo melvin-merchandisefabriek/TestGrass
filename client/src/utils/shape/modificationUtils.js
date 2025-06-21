@@ -57,13 +57,58 @@ export const applyShapeModifications = (shape, modifications) => {
     modifiedShape.closePath = modifications.closePath;
   }
   
+  // Copy viewBox if present in modifications
+  if (modifications.viewBox) {
+    modifiedShape.viewBox = modifications.viewBox;
+  }
+  
+  // Copy width and height if present in modifications
+  if (typeof modifications.width !== 'undefined') {
+    modifiedShape.width = modifications.width;
+  }
+  
+  if (typeof modifications.height !== 'undefined') {
+    modifiedShape.height = modifications.height;
+  }
+  
+  // Apply display options from modifications if present
+  if (modifications.displayOptions) {
+    modifiedShape.displayOptions = {
+      ...modifiedShape.displayOptions || {},
+      ...modifications.displayOptions
+    };
+  }
+  
+  // Process style templates with animation variables
+  if (modifications.style) {
+    // Process each style property for template expressions
+    Object.keys(modifications.style).forEach(key => {
+      const value = modifications.style[key];
+      if (typeof value === 'string' && value.includes('${')) {
+        // This is a template string that needs to be processed during animation
+        if (!modifications.animations) {
+          modifications.animations = { styleAnimations: {} };
+        } else if (!modifications.animations.styleAnimations) {
+          modifications.animations.styleAnimations = {};
+        }
+        
+        // Store this as a style animation expression
+        modifications.animations.styleAnimations[key] = value;
+        
+        // For the initial value, use a placeholder
+        modifications.style[key] = value.replace(/\${(.*?)}/g, '0');
+      }
+    });
+  }
+  
   // Set up animations from the modifications
   if (modifications.animations) {
     // Create or update animations structure in the shape data
     modifiedShape.animations = {
       duration: modifications.animations.duration || 5,
       loops: modifications.animations.loops || 0,
-      controlPointAnimations: {}
+      controlPointAnimations: {},
+      styleAnimations: modifications.animations.styleAnimations || {}
     };
     
     // Copy control point animations directly from the modifications
@@ -79,6 +124,12 @@ export const applyShapeModifications = (shape, modifications) => {
     if (modifications.animations.positionAnimations) {
       modifiedShape.animations.positionAnimations = 
         JSON.parse(JSON.stringify(modifications.animations.positionAnimations));
+    }
+    
+    // Copy style animations if present
+    if (modifications.animations.styleAnimations) {
+      modifiedShape.animations.styleAnimations = 
+        JSON.parse(JSON.stringify(modifications.animations.styleAnimations));
     }
   }
   

@@ -87,8 +87,7 @@
   "fillPath": true,
   "closePath": true,
   "style": {
-    "fill": "rgba(120, 200, 255, 0.3)",
-    "fillOpacity": 0.5,
+    "fill": "rgba(120, 200, 255, 0.15)",
     "stroke": "#ffffff",
     "strokeWidth": 1
   }

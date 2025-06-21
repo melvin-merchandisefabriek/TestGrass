@@ -1,6 +1,13 @@
 {
   "version": 1,
   "description": "Expand menu button to a larger size when clicked",
+  "viewBox": "0 0 200 300",
+  "width": 200,
+  "height": 300,
+  "modifyPosition": {
+    "x": 0,
+    "y": 0
+  },
   "animations": {
     "duration": 0.5,
     "loops": 1,
@@ -8,40 +15,40 @@
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "15 - 15 * min(1, n * 2)"
+            "expression": "15 - 0 * n"
           },
           "y": {
-            "expression": "15 - 15 * min(1, n * 2)"
+            "expression": "15 - 0 * n"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "105 + 15 * min(1, n * 2)"
+            "expression": "185 + 0 * n"
           },
           "y": {
-            "expression": "15 - 15 * min(1, n * 2)"
+            "expression": "15 - 0 * n"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "105 + 15 * min(1, n * 2)"
+            "expression": "185 + 0 * n"
           },
           "y": {
-            "expression": "25 + 15 * min(1, n * 2)"
+            "expression": "25 + 240 * n"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "15 - 15 * min(1, n * 2)"
+            "expression": "15 - 0 * n"
           },
           "y": {
-            "expression": "25 + 15 * min(1, n * 2)"
+            "expression": "25 + 240 * n"
           }
         }
       }
