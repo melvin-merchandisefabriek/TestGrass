@@ -542,10 +542,8 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
               let pathData = '';
               let firstPoint = null;
               
-              // First, extract all points from all segments to build a proper path
-              const allPoints = [];
-              
-              // Extract first point from each segment
+              // Always use the actual segment definitions for all shapes to preserve exact appearance
+              // Process each segment to preserve bezier curves and lines correctly
               shapeData.segments.forEach((segment, index) => {
                 const points = segment.points.map(pointId => {
                   const point = findPoint(pointId);
@@ -553,117 +551,42 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
                 });
                 
                 if (index === 0) {
-                  // For the first segment, add both start and end points
-                  if (segment.type === 'line') {
-                    allPoints.push(points[0]); // Start point
-                    allPoints.push(points[1]); // End point
-                  } else if (segment.type === 'bezier') {
-                    allPoints.push(points[0]); // Start point
-                    allPoints.push(points[3]); // End point
-                  }
-                } else {
-                  // For subsequent segments, just add the end point
-                  // (assuming segments are connected)
-                  if (segment.type === 'line') {
-                    allPoints.push(points[1]); // End point
-                  } else if (segment.type === 'bezier') {
-                    allPoints.push(points[3]); // End point
-                  }
-                }
-              });
-              
-              // Now build the path with the collected points
-              if (allPoints.length > 0) {
-                // For triangle-shape, let's use the actual bezier curves instead of simplified lines
-                if (shapeData.id === 'triangle-shape') {
-                  // Start with first point
-                  pathData = '';
-                  
-                  // Process each segment to preserve bezier curves
-                  shapeData.segments.forEach((segment, index) => {
-                    const points = segment.points.map(pointId => {
-                      const point = findPoint(pointId);
-                      return transformPoint(point);
-                    });
-                    
-                    if (index === 0) {
-                      // First segment - start with a move command
-                      if (segment.type === 'line') {
-                        const start = points[0];
-                        const end = points[1];
-                        pathData += `M ${start.x} ${start.y} L ${end.x} ${end.y} `;
-                      } else if (segment.type === 'bezier') {
-                        const start = points[0];
-                        const control1 = points[1];
-                        const control2 = points[2];
-                        const end = points[3];
-                        pathData += `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
-                      }
-                    } else {
-                      // Subsequent segments - continue the path
-                      if (segment.type === 'line') {
-                        const end = points[1];
-                        pathData += `L ${end.x} ${end.y} `;
-                      } else if (segment.type === 'bezier') {
-                        const control1 = points[1];
-                        const control2 = points[2];
-                        const end = points[3];
-                        pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
-                      }
-                    }
-                  });
-                  
-                  console.log(`Generated bezier-preserving path for triangle: ${pathData}`);
-                } else {
-                  // For other shapes, use the original simplified line-based path
-                  pathData = `M ${allPoints[0].x} ${allPoints[0].y} `;
-                  firstPoint = allPoints[0];
-                  
-                  // Add line segments to each subsequent point
-                  for (let i = 1; i < allPoints.length; i++) {
-                    pathData += `L ${allPoints[i].x} ${allPoints[i].y} `;
-                  }
-                }
-              } else {
-                // If no points were extracted, fall back to the original method
-                shapeData.segments.forEach((segment, index) => {
-                  const points = segment.points.map(pointId => transformPoint(findPoint(pointId)));
-                  
+                  // First segment - start with a move command
                   if (segment.type === 'line') {
                     const start = points[0];
                     const end = points[1];
-                    
-                    if (pathData === '') {
-                      pathData += `M ${start.x} ${start.y} `;
-                      firstPoint = start;
-                    } else {
-                      pathData += `L ${end.x} ${end.y} `;
-                    }
-
+                    pathData += `M ${start.x} ${start.y} L ${end.x} ${end.y} `;
+                    firstPoint = start;
                   } else if (segment.type === 'bezier') {
                     const start = points[0];
                     const control1 = points[1];
                     const control2 = points[2];
                     const end = points[3];
-                    
-                    if (pathData === '') {
-                      pathData += `M ${start.x} ${start.y} `;
-                      firstPoint = start;
-                    }
+                    pathData += `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                    firstPoint = start;
+                  }
+                } else {
+                  // Subsequent segments - continue the path
+                  if (segment.type === 'line') {
+                    const end = points[1];
+                    pathData += `L ${end.x} ${end.y} `;
+                  } else if (segment.type === 'bezier') {
+                    const control1 = points[1];
+                    const control2 = points[2];
+                    const end = points[3];
                     pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
                   }
-                });
-              }
+                }
+              });
               
               // Add the Z command to close the path if requested
               if (shapeData.closePath) {
                 pathData += 'Z';
               }
               
-              // Log the final path for menu-square
-              if (shapeData.id === 'menu-square') {
-                console.log('Final path data for menu-square:', pathData);
-                console.log('All extracted points:', allPoints);
+              // Log path data for debugging specific shapes
+              if (shapeData.id === 'menu-square' || shapeData.id === 'triangle-shape') {
+                console.log(`Generated bezier-preserving path for ${shapeData.id}: ${pathData}`);
               }
               
               return pathData;
