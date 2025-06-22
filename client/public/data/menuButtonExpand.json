@@ -9,46 +9,46 @@
     "y": 0
   },
   "animations": {
-    "duration": 0.5,
+    "duration": 0.9,
     "loops": 1,
     "controlPointAnimations": {
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "15 - 0 * n"
+            "expression": "55 - 80 * pow(sin((PI/2 * n)*(2-PI/2)), 0.5)+20"
           },
           "y": {
-            "expression": "15 - 0 * n"
+            "expression": "105 - 90 * pow(sin(PI/2 * n), 0.5)"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "185 + 0 * n"
+            "expression": "125 + 60 * pow(sin(PI/2 * n), 0.5)"
           },
           "y": {
-            "expression": "15 - 0 * n"
+            "expression": "105 - 90 * pow(sin(PI/2 * n), 0.5)"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "185 + 0 * n"
+            "expression": "125 + 60 * pow(sin(PI/2 * n), 0.5)"
           },
           "y": {
-            "expression": "25 + 240 * n"
+            "expression": "175 + 105 * pow(sin(PI/2 * n), 0.5)"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "15 - 0 * n"
+            "expression": "55 - 40 * pow(sin(PI/2 * n), 0.5)"
           },
           "y": {
-            "expression": "25 + 240 * n"
+            "expression": "175 + 105 * pow(sin(PI/2 * n), 0.5)"
           }
         }
       }
