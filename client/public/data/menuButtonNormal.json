@@ -50,7 +50,7 @@
       }
     },
     "styleAnimations": {
-      "fill": "rgba(79, 195, 247, ${0.1 * (1-n)})"
+      "fill": "rgba(255, 255, 255, ${0.9 * (1-n)})"
     }
   },
   "fillPath": true,

@@ -8,57 +8,63 @@
     "x": 0,
     "y": 0
   },
+  "variables":[
+    {"smooth": "(0.5 *sin(PI*pow(n, 6)-(PI/2))+0.5)"}
+  ],
   "animations": {
-    "duration": 0.9,
+    "duration": 0.5,
     "loops": 1,
     "controlPointAnimations": {
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "55 - 80 * pow(sin((PI/2 * n)*(2-PI/2)), 0.5)+20"
+            "expression": "70 - 55 * smooth"
           },
           "y": {
-            "expression": "105 - 90 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "120 - 105 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "125 + 60 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "105 - 90 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "120 - 105 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "125 + 60 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "175 + 105 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "175 + 105 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "55 - 40 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "70 - 55 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "175 + 105 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "175 + 105 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
           }
         }
       }
+    },
+    "styleAnimations": {
+      "fill": "rgba(255, 255, 255, ${0.9 * (n)})"
     }
   },
   "fillPath": true,
   "closePath": true,
   "style": {
     "fill": "rgba(100, 180, 255, 0.1)",
-    "stroke": "#FFFFFF",
+    "stroke": "white",
     "strokeWidth": 0
   }
 }

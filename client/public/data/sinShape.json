@@ -1,0 +1,46 @@
+{
+  "id": "full-circle",
+  "name": "Full Circle Shape",
+  "width": 200,
+  "height": 200,
+  "displayOptions": {
+    "showControlPoints": true,
+    "showAnchorPoints": true,
+    "showPositionAnchor": true,
+    "showBorder": true
+  },
+  "position": {
+    "svg": { "x": 0, "y": 0 },
+    "global": { "x": 800, "y": 300 }
+  },
+  "controlPoints": [
+    { "id": "point-1", "x": 0, "y": 0, "type": "anchor" },
+    { "id": "point-2", "x": 10, "y": 1.2235, "type": "anchor" },
+    { "id": "point-3", "x": 20, "y": 4.7745, "type": "anchor" },
+    { "id": "point-4", "x": 30, "y": 10.3055, "type": "anchor" },
+    { "id": "point-5", "x": 40, "y": 17.2745, "type": "anchor" },
+    { "id": "point-6", "x": 50, "y": 25, "type": "anchor" },
+    { "id": "point-7", "x": 60, "y": 32.7255, "type": "anchor" },
+    { "id": "point-8", "x": 70, "y": 39.6945, "type": "anchor" },
+    { "id": "point-9", "x": 80, "y": 45.2255, "type": "anchor" },
+    { "id": "point-10", "x": 90, "y": 48.7765, "type": "anchor" },
+    { "id": "point-10", "x": 100, "y": 50, "type": "anchor" }
+  ],
+  "segments": [
+  
+  ],
+  "animations": {
+    "duration": 1,
+    "loops": 0,
+    "controlPointAnimations": {
+
+    }
+  },
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(120, 200, 255, 0.35)",
+    "stroke": "#4fc3f7",
+    "strokeWidth": 2
+  }
+}

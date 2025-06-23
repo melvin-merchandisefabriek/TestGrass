@@ -6,6 +6,7 @@ import Shape from './Shape';
  * @returns {JSX.Element} The MenuButton component
  */
 const MenuButton = () => {
+  //const test = rgba(255, 255, 255, 0.51)
   // Path to JSON files
   const menuButtonSquarePath = process.env.PUBLIC_URL + '/data/menuButtonSquare.json';
   const expandPath = process.env.PUBLIC_URL + '/data/menuButtonExpand.json';
