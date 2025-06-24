@@ -24,16 +24,92 @@
     { "id": "point-8", "x": 70, "y": 39.6945, "type": "anchor" },
     { "id": "point-9", "x": 80, "y": 45.2255, "type": "anchor" },
     { "id": "point-10", "x": 90, "y": 48.7765, "type": "anchor" },
-    { "id": "point-10", "x": 100, "y": 50, "type": "anchor" }
+    { "id": "point-11", "x": 100, "y": 50, "type": "anchor" }
   ],
   "segments": [
   
   ],
   "animations": {
     "duration": 1,
-    "loops": 0,
+    "loops": 1,
     "controlPointAnimations": {
-
+      "point-1": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0*PI*2+PI/2)+0.5)))*(sin(PI*0-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-2": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.1*PI*2+PI/2)+0.5)))*(sin(PI*0.1-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-3": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.2*PI*2+PI/2)+0.5)))*(sin(PI*0.2-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-4": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.3*PI*2+PI/2)+0.5)))*(sin(PI*0.3-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-5": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.4*PI*2+PI/2)+0.5)))*(sin(PI*0.4-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-6": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.5*PI*2+PI/2)+0.5)))*(sin(PI*0.5-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-7": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.6*PI*2+PI/2)+0.5)))*(sin(PI*0.6-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-8": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.7*PI*2+PI/2)+0.5)))*(sin(PI*0.7-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-9": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.8*PI*2+PI/2)+0.5)))*(sin(PI*0.8-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-10": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(0.9*PI*2+PI/2)+0.5)))*(sin(PI*0.9-(PI/2))+0.5)"
+          }
+        }
+      },
+      "point-11": {
+        "formula": {
+          "x": {
+            "expression": "200 * (1/(1+(0.5*sin(1*PI*2+PI/2)+0.5)))*(sin(PI*1-(PI/2))+0.5)"
+          }
+        }
+      }
     }
   },
   "fillPath": true,
