@@ -5,11 +5,11 @@
   "width": 120,
   "height": 40,
   "displayOptions": {
-    "showControlPoints": false,
-    "showAnchorPoints": false,
-    "showPositionAnchor": false,
-    "showBorder": false,
-    "showControlPointNames": false
+    "showControlPoints": true,
+    "showAnchorPoints": true,
+    "showPositionAnchor": true,
+    "showBorder": true,
+    "showControlPointNames": true
   },
   "position": {
     "svg": { "x": 0, "y": 0 },

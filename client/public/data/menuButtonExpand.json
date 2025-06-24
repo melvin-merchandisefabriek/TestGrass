@@ -9,49 +9,49 @@
     "y": 0
   },
   "variables":[
-    {"smooth": "(0.5 *sin(PI*pow(n, 6)-(PI/2))+0.5)"}
+    {"smooth": "(0.5 *sin(PI*n-(PI/2))+0.5)"}
   ],
   "animations": {
-    "duration": 0.5,
+    "duration": 1,
     "loops": 1,
     "controlPointAnimations": {
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "70 - 55 * smooth"
+            "expression": "70 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(2.2))+0.5)"
           },
           "y": {
-            "expression": "120 - 105 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
+            "expression": "120 - 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(2.2))+0.5)"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
+            "expression": "125 + 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "120 - 105 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
+            "expression": "120 - 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
+            "expression": "125 + 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "175 + 105 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
+            "expression": "175 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "70 - 55 * (0.5 *sin(PI*pow(n, 3)-(PI/2))+0.5)"
+            "expression": "70 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "175 + 105 * 2*(0.5*sin((PI/2 * n)-(PI/2))+0.5)"
+            "expression": "175 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       }

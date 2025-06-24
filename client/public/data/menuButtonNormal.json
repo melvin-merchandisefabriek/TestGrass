@@ -5,46 +5,46 @@
   "width": 200,
   "height": 300,
   "animations": {
-    "duration": 0.5,
+    "duration": 1,
     "loops": 1,
     "controlPointAnimations": {
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "15 + 55 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "15 + 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "15 + 105 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "15 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "185 - 60 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "185 - 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "15 + 105 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "15 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "185 - 60 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "185 - 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "230 - 55 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "230 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "15 + 55 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "15 + 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           },
           "y": {
-            "expression": "230 - 55 * pow(sin(PI/2 * n), 0.5)"
+            "expression": "230 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
           }
         }
       }
