@@ -4,13 +4,15 @@
   "width": 300,
   "height": 200,
   "variables": [
-    {"waveExpression": "baseY + amp1 * sin(TWO_PI * freq1 * n) + amp2 * sin(TWO_PI * freq2 * n + phase)"},
     {"baseY": 110},
     {"amp1": 15},
     {"freq1": 1},
     {"amp2": 5},
     {"freq2": 3},
-    {"phase": 1.5707963267948966}
+    {"phase": 1.5707963267948966},
+    {"sinExpression1": "|var:amp1| * sin(TWO_PI * |var:freq1| * n)"},
+    {"sinExpression2": "|var:amp2| * sin(TWO_PI * |var:freq2| * n + |var:phase|)"},
+    {"waveExpression": "|var:baseY| + |var:sinExpression1| + |var:sinExpression2|"}
   ],
   "position": {
     "svg": { "x": 0, "y": 0 },

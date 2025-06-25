@@ -13,6 +13,18 @@
     "svg": { "x": 0, "y": 0 },
     "global": { "x": 800, "y": 300 }
   },
+  "variables": [
+    {"baseY": 110},
+    {"amp1": 0.5},
+    {"freq1": 1},
+    {"amp2": 50},
+    {"freq2": 3},
+    {"phase": 1.5707963267948966},
+    {"sinExpression1": "200 * (1/(1+(0.5*sin("},
+    {"sinExpression2": "*PI*2+PI/2)+0.5)))*(sin(PI*"},
+    {"sinExpression3": "+(PI/2))+0.5)"},
+    {"waveExpression": "|var:baseY| + |var:sinExpression1| + |var:sinExpression2|"}
+  ],
   "controlPoints": [
     { "id": "point-1", "x": 0, "y": 0, "type": "anchor" },
     { "id": "point-2", "x": 20, "y": 1.2235, "type": "anchor" },
@@ -34,79 +46,79 @@
     "loops": 0,
     "controlPointAnimations": {
       "point-1": {
-        "formula": {
-          "x": {
-            "expression": "200 * 1/(1-(0.5*sin(n*PI*2-PI/2)-0.5))*sin(n*PI)+0.5"
-          }
+      "formula": {
+        "x": {
+          "expression": "|var:sinExpression1| 0.0 |var:sinExpression2| 0.0 |var:sinExpression3|"
         }
+      }
       },
       "point-2": {
         "formula": {
           "x": {
-            "expression": "200 * 1/(1-(0.5*sin(n*PI*2-PI/2)-0.5))*sin(n*PI)+0.5"
+        "expression": "|var:sinExpression1| 0.1 |var:sinExpression2| 0.1 |var:sinExpression3|"
           }
         }
       },
       "point-3": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.2*PI*2+PI/2)+0.5)))*(sin(PI*0.2+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.2 |var:sinExpression2| 0.2 |var:sinExpression3|"
           }
         }
       },
       "point-4": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.3*PI*2+PI/2)+0.5)))*(sin(PI*0.3+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.3 |var:sinExpression2| 0.3 |var:sinExpression3|"
           }
         }
       },
       "point-5": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.4*PI*2+PI/2)+0.5)))*(sin(PI*0.4+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.4 |var:sinExpression2| 0.4 |var:sinExpression3|"
           }
         }
       },
       "point-6": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.5*PI*2+PI/2)+0.5)))*(sin(PI*0.5+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.5 |var:sinExpression2| 0.5 |var:sinExpression3|"
           }
         }
       },
       "point-7": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.6*PI*2+PI/2)+0.5)))*(sin(PI*0.6+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.6 |var:sinExpression2| 0.6 |var:sinExpression3|"
           }
         }
       },
       "point-8": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.7*PI*2+PI/2)+0.5)))*(sin(PI*0.7+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.7 |var:sinExpression2| 0.7 |var:sinExpression3|"
           }
         }
       },
       "point-9": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.8*PI*2+PI/2)+0.5)))*(sin(PI*0.8+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.8 |var:sinExpression2| 0.8 |var:sinExpression3|"
           }
         }
       },
       "point-10": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(0.9*PI*2+PI/2)+0.5)))*(sin(PI*0.9+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 0.9 |var:sinExpression2| 0.9 |var:sinExpression3|"
           }
         }
       },
       "point-11": {
         "formula": {
           "x": {
-            "expression": "200 * (1/(1+(0.5*sin(1*PI*2+PI/2)+0.5)))*(sin(PI*1+(PI/2))+0.5)"
+        "expression": "|var:sinExpression1| 1.0 |var:sinExpression2| 1.0 |var:sinExpression3|"
           }
         }
       }

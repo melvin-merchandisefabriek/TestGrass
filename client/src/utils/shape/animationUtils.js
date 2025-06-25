@@ -40,6 +40,17 @@ export const getAnimationVariables = (currentTime, duration) => {
  */
 export const evaluateExpression = (expression, variables) => {
   try {
+    // Process any remaining |var:varName| references in the expression
+    if (typeof expression === 'string' && expression.includes('|var:')) {
+      const processedExpr = processVariableReferences(expression, variables);
+      if (processedExpr !== expression) {
+        console.log(`Final variable substitution before evaluation: 
+          From: "${expression}" 
+          To: "${processedExpr}"`);
+        expression = processedExpr;
+      }
+    }
+    
     // Create a safe function from the expression with provided variables
     // This approach protects against code injection while allowing mathematical expressions
     const safeFunction = new Function(...Object.keys(variables), `
@@ -54,6 +65,60 @@ export const evaluateExpression = (expression, variables) => {
     console.warn(`Error evaluating expression: ${expression}`, error);
     return null;
   }
+};
+
+/**
+ * Process any remaining |var:varName| references in an expression string
+ * @param {string} expression - Expression string that might contain variable references
+ * @param {Object} variables - Object with variable values
+ * @returns {string} Expression with all variable references replaced
+ */
+export const processVariableReferences = (expression, variables) => {
+  if (!expression || typeof expression !== 'string' || !expression.includes('|var:')) {
+    return expression;
+  }
+  
+  let processedExpression = expression;
+  let hasChanges = true;
+  let iterations = 0;
+  const MAX_ITERATIONS = 10; // Prevent infinite loops from circular references
+  
+  // Continue processing until no more changes are made or max iterations reached
+  while (hasChanges && iterations < MAX_ITERATIONS) {
+    hasChanges = false;
+    iterations++;
+    
+    // Get variable names sorted by length (longest first) to avoid partial matches
+    const variableNames = Object.keys(variables).sort((a, b) => b.length - a.length);
+    
+    for (const varName of variableNames) {
+      const pattern = `|var:${varName}|`;
+      if (processedExpression.includes(pattern)) {
+        console.log(`Processing nested variable reference: ${pattern} in "${processedExpression}"`);
+        
+        // Get value and replace all occurrences
+        const varValue = variables[varName];
+        if (varValue !== undefined) {
+          const oldExpression = processedExpression;
+          // Use a string replacement method to avoid regex issues
+          processedExpression = processedExpression.split(pattern).join(varValue);
+          
+          if (oldExpression !== processedExpression) {
+            console.log(`Replaced ${pattern} with "${varValue}" in expression`);
+            hasChanges = true;
+          }
+        } else {
+          console.warn(`Variable "${varName}" not found for expression: ${processedExpression}`);
+        }
+      }
+    }
+  }
+  
+  if (iterations >= MAX_ITERATIONS) {
+    console.warn(`Reached maximum iterations (${MAX_ITERATIONS}) for variable substitution. Possible circular reference in: ${expression}`);
+  }
+  
+  return processedExpression;
 };
 
 /**
@@ -93,7 +158,18 @@ export const calculateFormula = (formula, currentTime, duration, shapeData) => {
 
   // Only support expression-based formulas
   if (formula.expression) {
-    // Debug information for specific expressions that would use the waveExpression
+    // Process any remaining |var:varName| references in the expression
+    const originalExpression = formula.expression;
+    const processedExprString = processVariableReferences(originalExpression, variables);
+    
+    // Log if expression was modified by variable substitution
+    if (originalExpression !== processedExprString) {
+      console.log(`Expression after variable substitution: "${processedExprString}"`);
+      // Use the processed expression for further operations
+      formula = { ...formula, expression: processedExprString };
+    }
+    
+    // Debug information for specific expressions that would use variables
     const isWaveFormula = formula.expression.includes('baseY') || 
                           formula.expression.includes('amp1') ||
                           formula.expression.includes('amp2');
@@ -120,22 +196,10 @@ export const calculateFormula = (formula, currentTime, duration, shapeData) => {
       });
     }
     
-    // For tracking the special case waveExpression formula
-    if (formula.expression.includes('baseY + amp1 * sin(TWO_PI * freq1 * n)') || 
-        formula.expression.includes('baseY') || 
-        formula.expression.includes('amp1')) {
-      console.log('FOUND WAVE EXPRESSION: All variables for evaluation:', Object.keys(variables).join(', '));
-      console.log('Expression:', formula.expression);
-      
-      // Log the actual values of key variables
-      ['baseY', 'amp1', 'freq1', 'amp2', 'freq2', 'phase'].forEach(varName => {
-        if (variables[varName] !== undefined) {
-          console.log(`Value of ${varName}: ${variables[varName]}`);
-        }
-      });
-    }
+    // Process variable references in the expression
+    const processedExpression = processVariableReferences(formula.expression, variables);
     
-    const result = evaluateExpression(formula.expression, variables);
+    const result = evaluateExpression(processedExpression, variables);
     
     if (isWaveFormula) {
       console.log(`Wave formula evaluation result: ${result}`);

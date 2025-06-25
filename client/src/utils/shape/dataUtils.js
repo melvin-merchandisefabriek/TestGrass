@@ -148,6 +148,10 @@ export const loadShapeData = async (filePath) => {
     
     const shapeData = await response.json();
     
+
+    
+    const dataWithVariables = processExpressionVariables(shapeData);
+
     // Process any special values in the data
     const dataWithNumericValues = processNumericValues(dataWithVariables);
     
@@ -205,27 +209,40 @@ export const processExpressionVariables = (data) => {
       if (typeof value === 'string') {
         let updatedValue = value;
         
-        // Debug special case for "cp-4" y expression
-        if (key === "expression" && obj?.formula?.y?.expression === "|var:waveExpression|") {
-          console.log(`Found critical expression for substitution: ${value}`);
-          console.log(`Using waveExpression: ${variableLookup.waveExpression}`);
-        }
-        
         // Look for all variable patterns in the string
-        for (const varName of variableNames) {
-          const pattern = `|var:${varName}|`;
-          if (updatedValue.includes(pattern)) {
-            console.log(`Found variable reference: ${pattern} in "${updatedValue}"`);
-            
-            // Get value and replace all occurrences
-            const varValue = variableLookup[varName];
-            if (varValue !== undefined) {
-              console.log(`Replacing ${pattern} with "${varValue}"`);
-              // Use a string replacement method instead of regex to avoid index issues
-              updatedValue = updatedValue.split(pattern).join(varValue);
-            } else {
-              console.warn(`Variable "${varName}" not found in variables definition`);
+        // Use a loop with a counter to handle nested variables (up to 5 levels deep)
+        let hasChanges = true;
+        let iterations = 0;
+        const MAX_ITERATIONS = 5;
+        
+        while (hasChanges && iterations < MAX_ITERATIONS) {
+          hasChanges = false;
+          iterations++;
+          
+          for (const varName of variableNames) {
+            const pattern = `|var:${varName}|`;
+            if (updatedValue.includes(pattern)) {
+              console.log(`Found variable reference: ${pattern} in "${updatedValue}" (iteration ${iterations})`);
+              
+              // Get value and replace all occurrences
+              const varValue = variableLookup[varName];
+              if (varValue !== undefined) {
+                console.log(`Replacing ${pattern} with "${varValue}"`);
+                // Use a string replacement method instead of regex to avoid index issues
+                const oldValue = updatedValue;
+                updatedValue = updatedValue.split(pattern).join(varValue);
+                
+                if (oldValue !== updatedValue) {
+                  hasChanges = true;
+                }
+              } else {
+                console.warn(`Variable "${varName}" not found in variables definition`);
+              }
             }
+          }
+          
+          if (iterations >= MAX_ITERATIONS) {
+            console.warn(`Reached maximum iterations (${MAX_ITERATIONS}) for variable substitution. Possible circular reference in: ${value}`);
           }
         }
         
@@ -247,4 +264,17 @@ export const processExpressionVariables = (data) => {
   
   // Return the processed data with the original variables still intact
   return { variables, ...dataToProcess };
+};
+
+/**
+ * Creates a variable reference string using the |var:name| syntax
+ * @param {string} varName - The name of the variable to reference
+ * @returns {string} - Formatted variable reference
+ * 
+ * @example
+ * // Returns "|var:myVariable|"
+ * varRef('myVariable')
+ */
+export const varRef = (varName) => {
+  return `|var:${varName}|`;
 };
