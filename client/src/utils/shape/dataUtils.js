@@ -149,7 +149,7 @@ export const loadShapeData = async (filePath) => {
     const shapeData = await response.json();
     
     // Process any special values in the data
-    const dataWithNumericValues = processNumericValues(shapeData);
+    const dataWithNumericValues = processNumericValues(dataWithVariables);
     
     // Process color values (by default, don't auto-process colors - set to true if needed)
     const autoProcessColors = false;
@@ -158,4 +158,93 @@ export const loadShapeData = async (filePath) => {
     console.error('Error loading shape data:', error);
     throw new Error(`Failed to load shape data from ${filePath}`);
   }
+};
+
+/**
+ * Processes expression variables using the |var:variableName| syntax
+ * Replaces variable references with their values from the top-level variables object
+ * @param {Object} data - JSON data that needs processing
+ * @returns {Object} - Processed data with variable references replaced
+ */
+export const processExpressionVariables = (data) => {
+  // Deep clone the data to avoid mutations
+  const processedData = JSON.parse(JSON.stringify(data));
+  
+  console.log('Processing expression variables in data');
+  
+  // If no top-level variables are defined, return the original data
+  if (!processedData.variables) {
+    console.log('No variables found in data');
+    return processedData;
+  }
+  
+  // Convert variables array to a lookup object
+  const variableLookup = {};
+  if (Array.isArray(processedData.variables)) {
+    // Handle array of objects format [{"varName": "value"}, ...]
+    processedData.variables.forEach(varObj => {
+      const key = Object.keys(varObj)[0];
+      variableLookup[key] = varObj[key];
+      console.log(`Found variable ${key} = ${varObj[key]}`);
+    });
+  } else if (typeof processedData.variables === 'object') {
+    // Handle direct object format {"varName": "value", ...}
+    Object.assign(variableLookup, processedData.variables);
+    console.log('Found variables:', variableLookup);
+  }
+  
+  // Get variable names sorted by length (longest first) to avoid partial matches
+  const variableNames = Object.keys(variableLookup).sort((a, b) => b.length - a.length);
+  console.log('Variable names sorted by length:', variableNames);
+  
+  // Function to recursively process all string values in the object
+  const processObject = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    
+    Object.entries(obj).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        let updatedValue = value;
+        
+        // Debug special case for "cp-4" y expression
+        if (key === "expression" && obj?.formula?.y?.expression === "|var:waveExpression|") {
+          console.log(`Found critical expression for substitution: ${value}`);
+          console.log(`Using waveExpression: ${variableLookup.waveExpression}`);
+        }
+        
+        // Look for all variable patterns in the string
+        for (const varName of variableNames) {
+          const pattern = `|var:${varName}|`;
+          if (updatedValue.includes(pattern)) {
+            console.log(`Found variable reference: ${pattern} in "${updatedValue}"`);
+            
+            // Get value and replace all occurrences
+            const varValue = variableLookup[varName];
+            if (varValue !== undefined) {
+              console.log(`Replacing ${pattern} with "${varValue}"`);
+              // Use a string replacement method instead of regex to avoid index issues
+              updatedValue = updatedValue.split(pattern).join(varValue);
+            } else {
+              console.warn(`Variable "${varName}" not found in variables definition`);
+            }
+          }
+        }
+        
+        // Update the value if any replacements were made
+        if (updatedValue !== value) {
+          console.log(`Updated value from "${value}" to "${updatedValue}"`);
+          obj[key] = updatedValue;
+        }
+      } else if (typeof value === 'object' && value !== null) {
+        // Recursively process nested objects and arrays
+        processObject(value);
+      }
+    });
+  };
+  
+  // Process the entire data object, except the variables definition
+  const { variables, ...dataToProcess } = processedData;
+  processObject(dataToProcess);
+  
+  // Return the processed data with the original variables still intact
+  return { variables, ...dataToProcess };
 };

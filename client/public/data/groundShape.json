@@ -3,6 +3,15 @@
   "name": "Sample Complex Shape",
   "width": 300,
   "height": 200,
+  "variables": [
+    {"waveExpression": "baseY + amp1 * sin(TWO_PI * freq1 * n) + amp2 * sin(TWO_PI * freq2 * n + phase)"},
+    {"baseY": 110},
+    {"amp1": 15},
+    {"freq1": 1},
+    {"amp2": 5},
+    {"freq2": 3},
+    {"phase": 1.5707963267948966}
+  ],
   "position": {
     "svg": { "x": 0, "y": 0 },
     "global": { "x": 0, "y": 0 }
@@ -33,15 +42,7 @@
             "expression": "120 + 30 * sin(TWO_PI * 2 * n) * exp(-5 * n)"
           },
           "y": {
-            "expression": "baseY + amp1 * sin(TWO_PI * freq1 * n) + amp2 * sin(TWO_PI * freq2 * n + phase)",
-            "variables": {
-              "baseY": 110,
-              "amp1": 15,
-              "freq1": 1,
-              "amp2": 5,
-              "freq2": 3,
-              "phase": 1.5707963267948966
-            }
+            "expression": "|var:waveExpression|"
           }
         }
       }

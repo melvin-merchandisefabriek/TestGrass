@@ -63,28 +63,88 @@ export const evaluateExpression = (expression, variables) => {
  * @param {number} duration - Total animation duration in seconds
  * @returns {number|null} Calculated value or null if invalid formula
  */
-export const calculateFormula = (formula, currentTime, duration) => {
+export const calculateFormula = (formula, currentTime, duration, shapeData) => {
   if (!formula) return null;
 
   // Create common variables available to all formulas
   const variables = getAnimationVariables(currentTime, duration);
 
+  // Add top-level variables from the shape data if available
+  if (shapeData && shapeData.variables) {
+    console.log('Adding top-level variables from shape data');
+    
+    // Handle array of objects format [{"varName": "value"}, ...]
+    if (Array.isArray(shapeData.variables)) {
+      shapeData.variables.forEach(varObj => {
+        const key = Object.keys(varObj)[0];
+        const value = varObj[key];
+        variables[key] = typeof value === 'number' ? value : value; // Keep as is
+        console.log(`Added top-level variable: ${key} = ${value}`);
+      });
+    } 
+    // Handle object format {"varName": "value", ...}
+    else if (typeof shapeData.variables === 'object') {
+      Object.entries(shapeData.variables).forEach(([key, value]) => {
+        variables[key] = typeof value === 'number' ? value : value; // Keep as is
+        console.log(`Added top-level variable: ${key} = ${value}`);
+      });
+    }
+  }
+
   // Only support expression-based formulas
   if (formula.expression) {
+    // Debug information for specific expressions that would use the waveExpression
+    const isWaveFormula = formula.expression.includes('baseY') || 
+                          formula.expression.includes('amp1') ||
+                          formula.expression.includes('amp2');
+    
+    if (isWaveFormula) {
+      console.log(`Processing potential wave formula: "${formula.expression}"`);
+      
+      // Log the variables that should be available
+      ['baseY', 'amp1', 'freq1', 'amp2', 'freq2', 'phase'].forEach(varName => {
+        if (formula.expression.includes(varName)) {
+          console.log(`- Variable ${varName} needed and is ${variables[varName] !== undefined ? 'AVAILABLE' : 'MISSING'}`);
+        }
+      });
+    }
+    
     // Add any custom variables defined in the formula
     if (formula.variables) {
       Object.entries(formula.variables).forEach(([key, value]) => {
         variables[key] = value;
+        
+        if (isWaveFormula) {
+          console.log(`- Added formula-specific variable ${key} = ${value}`);
+        }
       });
     }
     
-    return evaluateExpression(formula.expression, variables);
+    // For tracking the special case waveExpression formula
+    if (formula.expression.includes('baseY + amp1 * sin(TWO_PI * freq1 * n)') || 
+        formula.expression.includes('baseY') || 
+        formula.expression.includes('amp1')) {
+      console.log('FOUND WAVE EXPRESSION: All variables for evaluation:', Object.keys(variables).join(', '));
+      console.log('Expression:', formula.expression);
+      
+      // Log the actual values of key variables
+      ['baseY', 'amp1', 'freq1', 'amp2', 'freq2', 'phase'].forEach(varName => {
+        if (variables[varName] !== undefined) {
+          console.log(`Value of ${varName}: ${variables[varName]}`);
+        }
+      });
+    }
+    
+    const result = evaluateExpression(formula.expression, variables);
+    
+    if (isWaveFormula) {
+      console.log(`Wave formula evaluation result: ${result}`);
+    }
+    
+    return result;
   }
   
   console.error('Invalid formula format. Must include an expression property:', formula);
-  return null;
-  
-  console.warn(`Invalid formula: ${JSON.stringify(formula)}`);
   return null;
 };
 
@@ -140,19 +200,19 @@ export const calculateStyleProperties = (styleAnimations, currentTime, duration)
   return result;
 };
 
-export const calculateControlPointPosition = (pointId, animation, currentTime, duration, controlPoints) => {
+export const calculateControlPointPosition = (pointId, animation, currentTime, duration, controlPoints, shapeData) => {
   const result = { x: null, y: null };
   
   // Check for formula-based animation
   if (animation.formula) {
     // Calculate X position if formula is provided
     if (animation.formula.x) {
-      result.x = calculateFormula(animation.formula.x, currentTime, duration);
+      result.x = calculateFormula(animation.formula.x, currentTime, duration, shapeData);
     }
     
     // Calculate Y position if formula is provided
     if (animation.formula.y) {
-      result.y = calculateFormula(animation.formula.y, currentTime, duration);
+      result.y = calculateFormula(animation.formula.y, currentTime, duration, shapeData);
     }
   }
   
@@ -228,5 +288,5 @@ export const calculateGlobalPosition = (animation, currentTime, duration) => {
   // Treat global position as a special case of control point animation
   // Create a default point with {x:0, y:0} to use as the base
   const defaultPoint = { id: 'global', x: 0, y: 0 };
-  return calculateControlPointPosition('global', animation, currentTime, duration, [defaultPoint]);
+  return calculateControlPointPosition('global', animation, currentTime, duration, [defaultPoint], null);
 };

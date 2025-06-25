@@ -379,7 +379,8 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
           animation, 
           currentTime, 
           shapeData.animations.duration,
-          shapeData.controlPoints
+          shapeData.controlPoints,
+          shapeData  // Pass the entire shape data to access top-level variables
         );
         if (animatedValues) {
           newAnimatedControlPoints[pointId] = animatedValues;
