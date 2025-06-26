@@ -1,8 +1,8 @@
 {
   "id": "full-circle",
   "name": "Full Circle Shape",
-  "width": 200,
-  "height": 200,
+  "width": 600,
+  "height": 400,
   "displayOptions": {
     "showControlPoints": true,
     "showAnchorPoints": true,
@@ -14,29 +14,44 @@
     "global": { "x": 800, "y": 300 }
   },
   "variables": [
-    {"baseY": 110},
-    {"amp1": 0.5},
-    {"freq1": 1},
-    {"amp2": 50},
-    {"freq2": 3},
     {"phase": 1.5707963267948966},
-    {"sinExpression1": "200 * (1/(1+(0.5*sin("},
-    {"sinExpression2": "*PI*2+PI/2)+0.5)))*(sin(PI*"},
-    {"sinExpression3": "+(PI/2))+0.5)"},
-    {"waveExpression": "|var:baseY| + |var:sinExpression1| + |var:sinExpression2|"}
+    {"sinExpression1": "50 * (1/1-0.5*sin("},
+    {"sinExpression2": "*PI*2-(PI/2))+0.5)*sin(PI*"},
+    {"sinExpression3": "-(PI/2))+0.5"},
+    {"sinExpression4": "|var:sinExpression1| n |var:sinExpression2| n |var:sinExpression3|"}
   ],
   "controlPoints": [
-    { "id": "point-1", "x": 0, "y": 0, "type": "anchor" },
-    { "id": "point-2", "x": 20, "y": 1.2235, "type": "anchor" },
-    { "id": "point-3", "x": 40, "y": 4.7745, "type": "anchor" },
-    { "id": "point-4", "x": 60, "y": 10.3055, "type": "anchor" },
-    { "id": "point-5", "x": 80, "y": 17.2745, "type": "anchor" },
-    { "id": "point-6", "x": 100, "y": 25, "type": "anchor" },
-    { "id": "point-7", "x": 120, "y": 32.7255, "type": "anchor" },
-    { "id": "point-8", "x": 140, "y": 39.6945, "type": "anchor" },
-    { "id": "point-9", "x": 160, "y": 45.2255, "type": "anchor" },
-    { "id": "point-10", "x": 180, "y": 48.7765, "type": "anchor" },
-    { "id": "point-11", "x": 200, "y": 50, "type": "anchor" }
+    { "id": "point-1", "x": 0, "y": 200, "type": "anchor" },
+    { "id": "point-2", "x": 20, "y": 200, "type": "anchor" },
+    { "id": "point-3", "x": 40, "y": 200, "type": "anchor" },
+    { "id": "point-4", "x": 60, "y": 200, "type": "anchor" },
+    { "id": "point-5", "x": 80, "y": 200, "type": "anchor" },
+    { "id": "point-6", "x": 100, "y": 200, "type": "anchor" },
+    { "id": "point-7", "x": 120, "y": 200, "type": "anchor" },
+    { "id": "point-8", "x": 140, "y": 200, "type": "anchor" },
+    { "id": "point-9", "x": 160, "y": 200, "type": "anchor" },
+    { "id": "point-10", "x": 180, "y": 200, "type": "anchor" },
+    { "id": "point-11", "x": 200, "y": 200, "type": "anchor" },
+    { "id": "point-12", "x": 220, "y": 200, "type": "anchor" },
+    { "id": "point-13", "x": 240, "y": 200, "type": "anchor" },
+    { "id": "point-14", "x": 260, "y": 200, "type": "anchor" },
+    { "id": "point-15", "x": 280, "y": 200, "type": "anchor" },
+    { "id": "point-16", "x": 300, "y": 200, "type": "anchor" },
+    { "id": "point-17", "x": 320, "y": 200, "type": "anchor" },
+    { "id": "point-18", "x": 340, "y": 200, "type": "anchor" },
+    { "id": "point-19", "x": 360, "y": 200, "type": "anchor" },
+    { "id": "point-20", "x": 380, "y": 200, "type": "anchor" },
+    { "id": "point-21", "x": 400, "y": 200, "type": "anchor" },
+    { "id": "point-22", "x": 420, "y": 200, "type": "anchor" },
+    { "id": "point-23", "x": 440, "y": 200, "type": "anchor" },
+    { "id": "point-24", "x": 460, "y": 200, "type": "anchor" },
+    { "id": "point-25", "x": 480, "y": 200, "type": "anchor" },
+    { "id": "point-26", "x": 500, "y": 200, "type": "anchor" },
+    { "id": "point-27", "x": 520, "y": 200, "type": "anchor" },
+    { "id": "point-28", "x": 540, "y": 200, "type": "anchor" },
+    { "id": "point-29", "x": 560, "y": 200, "type": "anchor" },
+    { "id": "point-30", "x": 580, "y": 200, "type": "anchor" },
+    { "id": "point-31", "x": 600, "y": 200, "type": "anchor" }
   ],
   "segments": [
   
@@ -46,79 +61,219 @@
     "loops": 0,
     "controlPointAnimations": {
       "point-1": {
-      "formula": {
-        "x": {
-          "expression": "|var:sinExpression1| 0.0 |var:sinExpression2| 0.0 |var:sinExpression3|"
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 0.0 |var:sinExpression2| 0.0 |var:sinExpression3|"
+          }
         }
-      }
       },
       "point-2": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.1 |var:sinExpression2| 0.1 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 0.2 |var:sinExpression2| 0.2 |var:sinExpression3|"
           }
         }
       },
       "point-3": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.2 |var:sinExpression2| 0.2 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 0.4 |var:sinExpression2| 0.4 |var:sinExpression3|"
           }
         }
       },
       "point-4": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.3 |var:sinExpression2| 0.3 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 0.6 |var:sinExpression2| 0.6 |var:sinExpression3|"
           }
         }
       },
       "point-5": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.4 |var:sinExpression2| 0.4 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 0.8 |var:sinExpression2| 0.8 |var:sinExpression3|"
           }
         }
       },
       "point-6": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.5 |var:sinExpression2| 0.5 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 1.0 |var:sinExpression2| 1.0 |var:sinExpression3|"
           }
         }
       },
       "point-7": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.6 |var:sinExpression2| 0.6 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 1.2 |var:sinExpression2| 1.2 |var:sinExpression3|"
           }
         }
       },
       "point-8": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.7 |var:sinExpression2| 0.7 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 1.4 |var:sinExpression2| 1.4 |var:sinExpression3|"
           }
         }
       },
       "point-9": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.8 |var:sinExpression2| 0.8 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 1.6 |var:sinExpression2| 1.6 |var:sinExpression3|"
           }
         }
       },
       "point-10": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 0.9 |var:sinExpression2| 0.9 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 1.8 |var:sinExpression2| 1.8 |var:sinExpression3|"
           }
         }
       },
       "point-11": {
         "formula": {
-          "x": {
-        "expression": "|var:sinExpression1| 1.0 |var:sinExpression2| 1.0 |var:sinExpression3|"
+          "y": {
+            "expression": "|var:sinExpression1| 2.0 |var:sinExpression2| 2.0 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-12": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 2.2 |var:sinExpression2| 2.2 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-13": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 2.4 |var:sinExpression2| 2.4 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-14": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 2.6 |var:sinExpression2| 2.6 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-15": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 2.8 |var:sinExpression2| 2.8 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-16": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 3.0 |var:sinExpression2| 3.0 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-17": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 3.2 |var:sinExpression2| 3.2 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-18": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 3.4 |var:sinExpression2| 3.4 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-19": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 3.6 |var:sinExpression2| 3.6 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-20": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 3.8 |var:sinExpression2| 3.8 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-21": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 4.0 |var:sinExpression2| 4.0 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-22": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 4.2 |var:sinExpression2| 4.2 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-23": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 4.4 |var:sinExpression2| 4.4 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-24": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 4.6 |var:sinExpression2| 4.6 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-25": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 4.8 |var:sinExpression2| 4.8 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-26": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 5.0 |var:sinExpression2| 5.0 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-27": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 5.2 |var:sinExpression2| 5.2 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-28": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 5.4 |var:sinExpression2| 5.4 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-29": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 5.6 |var:sinExpression2| 5.6 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-30": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 5.8 |var:sinExpression2| 5.8 |var:sinExpression3|"
+          }
+        }
+      },
+      "point-31": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression1| 6.0 |var:sinExpression2| 6.0 |var:sinExpression3|"
           }
         }
       }
