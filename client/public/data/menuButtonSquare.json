@@ -13,7 +13,7 @@
   },
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 750, "y": 15 }
+    "global": { "x": 450, "y": 15 }
   },
   "controlPoints": [
     { "id": "sq-1", "x": 10, "y": 10, "type": "anchor" },

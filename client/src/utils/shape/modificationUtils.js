@@ -79,6 +79,28 @@ export const applyShapeModifications = (shape, modifications) => {
     };
   }
   
+  // --- Merge or preserve variables field ---
+  if (shape.variables || modifications.variables) {
+    // Support both array and object forms
+    let baseVars = shape.variables || [];
+    let modVars = modifications.variables || [];
+    // Convert to array of objects if needed
+    if (!Array.isArray(baseVars)) baseVars = [baseVars];
+    if (!Array.isArray(modVars)) modVars = [modVars];
+    // Merge arrays, with modifications taking precedence for duplicate keys
+    const varMap = {};
+    baseVars.forEach(obj => {
+      const key = Object.keys(obj)[0];
+      varMap[key] = obj[key];
+    });
+    modVars.forEach(obj => {
+      const key = Object.keys(obj)[0];
+      varMap[key] = obj[key];
+    });
+    // Rebuild as array of objects
+    modifiedShape.variables = Object.entries(varMap).map(([k, v]) => ({ [k]: v }));
+  }
+  
   // Process style templates with animation variables
   if (modifications.style) {
     // Process each style property for template expressions

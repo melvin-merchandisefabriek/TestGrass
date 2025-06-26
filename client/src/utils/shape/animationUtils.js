@@ -153,11 +153,12 @@ export const processStyleTemplate = (template, variables) => {
   if (!template || typeof template !== 'string' || !template.includes('${')) {
     return template;
   }
-  
   try {
-    // Replace ${...} expressions with evaluated results
+    // Replace ${...} expressions with evaluated results, after variable substitution
     return template.replace(/\${(.*?)}/g, (match, expression) => {
-      const result = evaluateExpression(expression, variables);
+      // Substitute |var:...| in the expression before evaluating
+      const substituted = substituteVariables(expression, variables);
+      const result = evaluateExpression(substituted, variables);
       return result !== null ? result : 0;
     });
   } catch (error) {
@@ -173,16 +174,27 @@ export const processStyleTemplate = (template, variables) => {
  * @param {number} duration - Total animation duration in seconds
  * @returns {Object} Animated style properties
  */
-export const calculateStyleProperties = (styleAnimations, currentTime, duration) => {
+export const calculateStyleProperties = (styleAnimations, currentTime, duration, shapeData) => {
   if (!styleAnimations) return {};
-  
+  // Start with standard animation variables
   const variables = getAnimationVariables(currentTime, duration);
+  // Merge in custom variables from shapeData.variables (array or object)
+  if (shapeData && shapeData.variables) {
+    if (Array.isArray(shapeData.variables)) {
+      shapeData.variables.forEach(varObj => {
+        const key = Object.keys(varObj)[0];
+        variables[key] = varObj[key];
+      });
+    } else if (typeof shapeData.variables === 'object') {
+      Object.entries(shapeData.variables).forEach(([key, value]) => {
+        variables[key] = value;
+      });
+    }
+  }
   const result = {};
-  
   Object.entries(styleAnimations).forEach(([property, template]) => {
     result[property] = processStyleTemplate(template, variables);
   });
-  
   return result;
 };
 

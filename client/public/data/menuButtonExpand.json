@@ -21,43 +21,43 @@
             "expression": "50 - 55 * |var:smooth|"
           },
           "y": {
-            "expression": "100 - 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "100 - 105 * |var:smooth|"
           }
         }
       },
       "sq-2": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "125 + 60 * |var:smooth|"
           },
           "y": {
-            "expression": "120 - 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "120 - 105 * |var:smooth|"
           }
         }
       },
       "sq-3": {
         "formula": {
           "x": {
-            "expression": "125 + 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "125 + 60 * |var:smooth|"
           },
           "y": {
-            "expression": "175 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "175 + 105 * |var:smooth|"
           }
         }
       },
       "sq-4": {
         "formula": {
           "x": {
-            "expression": "70 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "70 - 55 * |var:smooth|"
           },
           "y": {
-            "expression": "175 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "175 + 105 * |var:smooth|"
           }
         }
       }
     },
     "styleAnimations": {
-      "fill": "rgba(255, 255, 255, ${0.9 * (n)})"
+      "fill": "rgba(255, 255, 255, ${0.9 * |var:smooth|})"
     }
   },
   "fillPath": true,

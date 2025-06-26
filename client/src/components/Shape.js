@@ -394,7 +394,8 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
       const newAnimatedStyle = calculateStyleProperties(
         shapeData.animations.styleAnimations,
         currentTime,
-        shapeData.animations.duration
+        shapeData.animations.duration,
+        shapeData // Pass shapeData for custom variables
       );
       
       // Update animated style if changed
