@@ -1,3 +1,5 @@
+import { substituteVariables, deepClone } from './variableUtils';
+
 /**
  * Utilities for loading and processing shape data
  */
@@ -10,7 +12,7 @@
  */
 export const processNumericValues = (data) => {
   // Deep clone the data to avoid mutations
-  const processedData = JSON.parse(JSON.stringify(data));
+  const processedData = deepClone(data);
 
   // Process special PI values in animation formulas
   if (processedData.animations?.controlPointAnimations) {
@@ -171,98 +173,30 @@ export const loadShapeData = async (filePath) => {
  * @returns {Object} - Processed data with variable references replaced
  */
 export const processExpressionVariables = (data) => {
-  // Deep clone the data to avoid mutations
-  const processedData = JSON.parse(JSON.stringify(data));
-  
-  console.log('Processing expression variables in data');
-  
-  // If no top-level variables are defined, return the original data
-  if (!processedData.variables) {
-    console.log('No variables found in data');
-    return processedData;
-  }
-  
-  // Convert variables array to a lookup object
+  const processedData = deepClone(data);
+  if (!processedData.variables) return processedData;
   const variableLookup = {};
   if (Array.isArray(processedData.variables)) {
-    // Handle array of objects format [{"varName": "value"}, ...]
     processedData.variables.forEach(varObj => {
       const key = Object.keys(varObj)[0];
       variableLookup[key] = varObj[key];
-      console.log(`Found variable ${key} = ${varObj[key]}`);
     });
   } else if (typeof processedData.variables === 'object') {
-    // Handle direct object format {"varName": "value", ...}
     Object.assign(variableLookup, processedData.variables);
-    console.log('Found variables:', variableLookup);
   }
-  
-  // Get variable names sorted by length (longest first) to avoid partial matches
-  const variableNames = Object.keys(variableLookup).sort((a, b) => b.length - a.length);
-  console.log('Variable names sorted by length:', variableNames);
-  
-  // Function to recursively process all string values in the object
   const processObject = (obj) => {
     if (!obj || typeof obj !== 'object') return;
-    
     Object.entries(obj).forEach(([key, value]) => {
       if (typeof value === 'string') {
-        let updatedValue = value;
-        
-        // Look for all variable patterns in the string
-        // Use a loop with a counter to handle nested variables (up to 5 levels deep)
-        let hasChanges = true;
-        let iterations = 0;
-        const MAX_ITERATIONS = 5;
-        
-        while (hasChanges && iterations < MAX_ITERATIONS) {
-          hasChanges = false;
-          iterations++;
-          
-          for (const varName of variableNames) {
-            const pattern = `|var:${varName}|`;
-            if (updatedValue.includes(pattern)) {
-              console.log(`Found variable reference: ${pattern} in "${updatedValue}" (iteration ${iterations})`);
-              
-              // Get value and replace all occurrences
-              const varValue = variableLookup[varName];
-              if (varValue !== undefined) {
-                console.log(`Replacing ${pattern} with "${varValue}"`);
-                // Use a string replacement method instead of regex to avoid index issues
-                const oldValue = updatedValue;
-                updatedValue = updatedValue.split(pattern).join(varValue);
-                
-                if (oldValue !== updatedValue) {
-                  hasChanges = true;
-                }
-              } else {
-                console.warn(`Variable "${varName}" not found in variables definition`);
-              }
-            }
-          }
-          
-          if (iterations >= MAX_ITERATIONS) {
-            console.warn(`Reached maximum iterations (${MAX_ITERATIONS}) for variable substitution. Possible circular reference in: ${value}`);
-          }
-        }
-        
-        // Update the value if any replacements were made
-        if (updatedValue !== value) {
-          console.log(`Updated value from "${value}" to "${updatedValue}"`);
-          obj[key] = updatedValue;
-        }
+        const updatedValue = substituteVariables(value, variableLookup);
+        if (updatedValue !== value) obj[key] = updatedValue;
       } else if (typeof value === 'object' && value !== null) {
-        // Recursively process nested objects and arrays
         processObject(value);
       }
     });
   };
-  
-  // Process the entire data object, except the variables definition
   const { variables, ...dataToProcess } = processedData;
   processObject(dataToProcess);
-  
-  // Return the processed data with the original variables still intact
   return { variables, ...dataToProcess };
 };
 

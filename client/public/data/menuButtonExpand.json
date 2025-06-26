@@ -8,8 +8,8 @@
     "x": 0,
     "y": 0
   },
-  "variables":[
-    {"smooth": "(0.5 *sin(PI*n-(PI/2))+0.5)"}
+  "variables": [
+    {"smooth": "(1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"}
   ],
   "animations": {
     "duration": 1,
@@ -18,7 +18,7 @@
       "sq-1": {
         "formula": {
           "x": {
-            "expression": "50 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+            "expression": "50 - 55 * |var:smooth|"
           },
           "y": {
             "expression": "100 - 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"

@@ -15,7 +15,7 @@
   },
   "variables": [
     {"phase": 1.5707963267948966},
-    {"sinExpression1": "50 * (1/1-0.5*sin("},
+    {"sinExpression1": "5 * (1/1-0.5*sin("},
     {"sinExpression2": "*PI*2-(PI/2))+0.5)*sin(PI*"},
     {"sinExpression3": "-(PI/2))+0.5"},
     {"sinExpression4": "|var:sinExpression1| n |var:sinExpression2| n |var:sinExpression3|"}
@@ -63,7 +63,7 @@
       "point-1": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 0.0 |var:sinExpression2| 0.0 |var:sinExpression3|"
+            "expression": "|var:sinExpression1| n |var:sinExpression2| n |var:sinExpression3|"
           }
         }
       },
