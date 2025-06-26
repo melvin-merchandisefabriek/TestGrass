@@ -11,47 +11,48 @@
   },
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 800, "y": 300 }
+    "global": { "x": 20, "y": 400 }
   },
   "variables": [
     {"phase": 1.5707963267948966},
-    {"sinExpression1": "5 * (1/1-0.5*sin("},
+    {"sinExpression1": "200 - 50 * (1/1-0.5*sin("},
     {"sinExpression2": "*PI*2-(PI/2))+0.5)*sin(PI*"},
     {"sinExpression3": "-(PI/2))+0.5"},
-    {"sinExpression4": "|var:sinExpression1| n |var:sinExpression2| n |var:sinExpression3|"}
+    {"sinExpression4": "200-50*(1/(1-0.5*sin(n*PI*2-PI/2)+0.5))*(sin(PI*n-(PI/2))+0.5)"}
   ],
   "controlPoints": [
-    { "id": "point-1", "x": 0, "y": 200, "type": "anchor" },
-    { "id": "point-2", "x": 20, "y": 200, "type": "anchor" },
-    { "id": "point-3", "x": 40, "y": 200, "type": "anchor" },
-    { "id": "point-4", "x": 60, "y": 200, "type": "anchor" },
-    { "id": "point-5", "x": 80, "y": 200, "type": "anchor" },
-    { "id": "point-6", "x": 100, "y": 200, "type": "anchor" },
-    { "id": "point-7", "x": 120, "y": 200, "type": "anchor" },
-    { "id": "point-8", "x": 140, "y": 200, "type": "anchor" },
-    { "id": "point-9", "x": 160, "y": 200, "type": "anchor" },
-    { "id": "point-10", "x": 180, "y": 200, "type": "anchor" },
-    { "id": "point-11", "x": 200, "y": 200, "type": "anchor" },
-    { "id": "point-12", "x": 220, "y": 200, "type": "anchor" },
-    { "id": "point-13", "x": 240, "y": 200, "type": "anchor" },
-    { "id": "point-14", "x": 260, "y": 200, "type": "anchor" },
-    { "id": "point-15", "x": 280, "y": 200, "type": "anchor" },
-    { "id": "point-16", "x": 300, "y": 200, "type": "anchor" },
-    { "id": "point-17", "x": 320, "y": 200, "type": "anchor" },
-    { "id": "point-18", "x": 340, "y": 200, "type": "anchor" },
-    { "id": "point-19", "x": 360, "y": 200, "type": "anchor" },
-    { "id": "point-20", "x": 380, "y": 200, "type": "anchor" },
-    { "id": "point-21", "x": 400, "y": 200, "type": "anchor" },
-    { "id": "point-22", "x": 420, "y": 200, "type": "anchor" },
-    { "id": "point-23", "x": 440, "y": 200, "type": "anchor" },
-    { "id": "point-24", "x": 460, "y": 200, "type": "anchor" },
-    { "id": "point-25", "x": 480, "y": 200, "type": "anchor" },
-    { "id": "point-26", "x": 500, "y": 200, "type": "anchor" },
-    { "id": "point-27", "x": 520, "y": 200, "type": "anchor" },
-    { "id": "point-28", "x": 540, "y": 200, "type": "anchor" },
-    { "id": "point-29", "x": 560, "y": 200, "type": "anchor" },
-    { "id": "point-30", "x": 580, "y": 200, "type": "anchor" },
-    { "id": "point-31", "x": 600, "y": 200, "type": "anchor" }
+    { "id": "point-1", "x": 0, "y": 0, "type": "anchor" },
+    { "id": "point-2", "x": 20, "y": 0, "type": "anchor" },
+    { "id": "point-3", "x": 40, "y": 0, "type": "anchor" },
+    { "id": "point-4", "x": 60, "y": 0, "type": "anchor" },
+    { "id": "point-5", "x": 80, "y": 0, "type": "anchor" },
+    { "id": "point-6", "x": 100, "y": 0, "type": "anchor" },
+    { "id": "point-7", "x": 120, "y": 0, "type": "anchor" },
+    { "id": "point-8", "x": 140, "y": 0, "type": "anchor" },
+    { "id": "point-9", "x": 160, "y": 0, "type": "anchor" },
+    { "id": "point-10", "x": 180, "y": 0, "type": "anchor" },
+    { "id": "point-11", "x": 200, "y": 0, "type": "anchor" },
+    { "id": "point-12", "x": 220, "y": 0, "type": "anchor" },
+    { "id": "point-13", "x": 240, "y": 0, "type": "anchor" },
+    { "id": "point-14", "x": 260, "y": 0, "type": "anchor" },
+    { "id": "point-15", "x": 280, "y": 0, "type": "anchor" },
+    { "id": "point-16", "x": 300, "y": 0, "type": "anchor" },
+    { "id": "point-17", "x": 320, "y": 0, "type": "anchor" },
+    { "id": "point-18", "x": 340, "y": 0, "type": "anchor" },
+    { "id": "point-19", "x": 360, "y": 0, "type": "anchor" },
+    { "id": "point-20", "x": 380, "y": 0, "type": "anchor" },
+    { "id": "point-21", "x": 400, "y": 0, "type": "anchor" },
+    { "id": "point-22", "x": 420, "y": 0, "type": "anchor" },
+    { "id": "point-23", "x": 440, "y": 0, "type": "anchor" },
+    { "id": "point-24", "x": 460, "y": 0, "type": "anchor" },
+    { "id": "point-25", "x": 480, "y": 0, "type": "anchor" },
+    { "id": "point-26", "x": 500, "y": 0, "type": "anchor" },
+    { "id": "point-27", "x": 520, "y": 0, "type": "anchor" },
+    { "id": "point-28", "x": 540, "y": 0, "type": "anchor" },
+    { "id": "point-29", "x": 560, "y": 0, "type": "anchor" },
+    { "id": "point-30", "x": 580, "y": 0, "type": "anchor" },
+    { "id": "point-31", "x": 600, "y": 0, "type": "anchor" },
+    { "id": "point-32", "x": 0, "y": 0, "type": "anchor" }
   ],
   "segments": [
   
@@ -60,220 +61,227 @@
     "duration": 1,
     "loops": 0,
     "controlPointAnimations": {
+      "point-32": {
+        "formula": {
+          "y": {
+            "expression": "|var:sinExpression4|"
+          }
+        }
+      },
       "point-1": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| n |var:sinExpression2| n |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.032258 |var:sinExpression2| 0.032258 |var:sinExpression3|"
           }
         }
-      },
-      "point-2": {
+            },
+            "point-2": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 0.2 |var:sinExpression2| 0.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.064516 |var:sinExpression2| 0.064516 |var:sinExpression3|"
           }
         }
-      },
-      "point-3": {
+            },
+            "point-3": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 0.4 |var:sinExpression2| 0.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.096774 |var:sinExpression2| 0.096774 |var:sinExpression3|"
           }
         }
-      },
-      "point-4": {
+            },
+            "point-4": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 0.6 |var:sinExpression2| 0.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.129032 |var:sinExpression2| 0.129032 |var:sinExpression3|"
           }
         }
-      },
-      "point-5": {
+            },
+            "point-5": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 0.8 |var:sinExpression2| 0.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.161290 |var:sinExpression2| 0.161290 |var:sinExpression3|"
           }
         }
-      },
-      "point-6": {
+            },
+            "point-6": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 1.0 |var:sinExpression2| 1.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.193548 |var:sinExpression2| 0.193548 |var:sinExpression3|"
           }
         }
-      },
-      "point-7": {
+            },
+            "point-7": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 1.2 |var:sinExpression2| 1.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.225806 |var:sinExpression2| 0.225806 |var:sinExpression3|"
           }
         }
-      },
-      "point-8": {
+            },
+            "point-8": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 1.4 |var:sinExpression2| 1.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.258064 |var:sinExpression2| 0.258064 |var:sinExpression3|"
           }
         }
-      },
-      "point-9": {
+            },
+            "point-9": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 1.6 |var:sinExpression2| 1.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.290323 |var:sinExpression2| 0.290323 |var:sinExpression3|"
           }
         }
-      },
-      "point-10": {
+            },
+            "point-10": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 1.8 |var:sinExpression2| 1.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.322581 |var:sinExpression2| 0.322581 |var:sinExpression3|"
           }
         }
-      },
-      "point-11": {
+            },
+            "point-11": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 2.0 |var:sinExpression2| 2.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.354839 |var:sinExpression2| 0.354839 |var:sinExpression3|"
           }
         }
-      },
-      "point-12": {
+            },
+            "point-12": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 2.2 |var:sinExpression2| 2.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.387097 |var:sinExpression2| 0.387097 |var:sinExpression3|"
           }
         }
-      },
-      "point-13": {
+            },
+            "point-13": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 2.4 |var:sinExpression2| 2.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.419355 |var:sinExpression2| 0.419355 |var:sinExpression3|"
           }
         }
-      },
-      "point-14": {
+            },
+            "point-14": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 2.6 |var:sinExpression2| 2.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.451613 |var:sinExpression2| 0.451613 |var:sinExpression3|"
           }
         }
-      },
-      "point-15": {
+            },
+            "point-15": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 2.8 |var:sinExpression2| 2.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.483871 |var:sinExpression2| 0.483871 |var:sinExpression3|"
           }
         }
-      },
-      "point-16": {
+            },
+            "point-16": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 3.0 |var:sinExpression2| 3.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.516129 |var:sinExpression2| 0.516129 |var:sinExpression3|"
           }
         }
-      },
-      "point-17": {
+            },
+            "point-17": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 3.2 |var:sinExpression2| 3.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.548387 |var:sinExpression2| 0.548387 |var:sinExpression3|"
           }
         }
-      },
-      "point-18": {
+            },
+            "point-18": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 3.4 |var:sinExpression2| 3.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.580645 |var:sinExpression2| 0.580645 |var:sinExpression3|"
           }
         }
-      },
-      "point-19": {
+            },
+            "point-19": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 3.6 |var:sinExpression2| 3.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.612903 |var:sinExpression2| 0.612903 |var:sinExpression3|"
           }
         }
-      },
-      "point-20": {
+            },
+            "point-20": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 3.8 |var:sinExpression2| 3.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.645161 |var:sinExpression2| 0.645161 |var:sinExpression3|"
           }
         }
-      },
-      "point-21": {
+            },
+            "point-21": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 4.0 |var:sinExpression2| 4.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.677419 |var:sinExpression2| 0.677419 |var:sinExpression3|"
           }
         }
-      },
-      "point-22": {
+            },
+            "point-22": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 4.2 |var:sinExpression2| 4.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.709677 |var:sinExpression2| 0.709677 |var:sinExpression3|"
           }
         }
-      },
-      "point-23": {
+            },
+            "point-23": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 4.4 |var:sinExpression2| 4.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.741935 |var:sinExpression2| 0.741935 |var:sinExpression3|"
           }
         }
-      },
-      "point-24": {
+            },
+            "point-24": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 4.6 |var:sinExpression2| 4.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.774194 |var:sinExpression2| 0.774194 |var:sinExpression3|"
           }
         }
-      },
-      "point-25": {
+            },
+            "point-25": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 4.8 |var:sinExpression2| 4.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.806452 |var:sinExpression2| 0.806452 |var:sinExpression3|"
           }
         }
-      },
-      "point-26": {
+            },
+            "point-26": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 5.0 |var:sinExpression2| 5.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.838710 |var:sinExpression2| 0.838710 |var:sinExpression3|"
           }
         }
-      },
-      "point-27": {
+            },
+            "point-27": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 5.2 |var:sinExpression2| 5.2 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.870968 |var:sinExpression2| 0.870968 |var:sinExpression3|"
           }
         }
-      },
-      "point-28": {
+            },
+            "point-28": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 5.4 |var:sinExpression2| 5.4 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.903226 |var:sinExpression2| 0.903226 |var:sinExpression3|"
           }
         }
-      },
-      "point-29": {
+            },
+            "point-29": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 5.6 |var:sinExpression2| 5.6 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.935484 |var:sinExpression2| 0.935484 |var:sinExpression3|"
           }
         }
-      },
-      "point-30": {
+            },
+            "point-30": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 5.8 |var:sinExpression2| 5.8 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 0.967742 |var:sinExpression2| 0.967742 |var:sinExpression3|"
           }
         }
-      },
-      "point-31": {
+            },
+            "point-31": {
         "formula": {
           "y": {
-            "expression": "|var:sinExpression1| 6.0 |var:sinExpression2| 6.0 |var:sinExpression3|"
+        "expression": "|var:sinExpression1| 1.0 |var:sinExpression2| 1.0 |var:sinExpression3|"
           }
         }
       }

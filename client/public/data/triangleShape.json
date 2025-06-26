@@ -12,7 +12,7 @@
     "showControlPointNames": false
   },
   "variables":[
-    {"white": "#FFFFFF"},
+    {"white": "#0C5800"},
     {"blue": "#64B5F6"},
     {"darkBlue": "#1976D2"},
     {"lightBlue": "#E3F2FD"}
