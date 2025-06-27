@@ -12,14 +12,12 @@
     "showControlPointNames": false
   },
   "variables":[
-    {"white": "#0C5800"},
-    {"blue": "#64B5F6"},
-    {"darkBlue": "#1976D2"},
+    {"green": "#0C5800"},
     {"lightBlue": "#E3F2FD"}
   ],
   "position": {
     "svg": { "x": 0, "y": 0 },
-    "global": { "x": 250, "y": 150 }
+    "global": { "x": 50, "y": 150 }
   },
   "controlPoints": [
     { "id": "tri-top", "x": 100, "y": 20, "type": "anchor" },
@@ -55,7 +53,7 @@
   "fillPath": true,
   "closePath": true,
   "style": {
-    "fill": "white",
+    "fill": "|var:green|",
     "stroke": "#00FF264D",
     "strokeWidth": 1
   }

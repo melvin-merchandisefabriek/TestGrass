@@ -18,6 +18,30 @@ const TriangleArray = () => {
           x: { expression: "100+50*sin(PI*n*2-(PI/2))" },
           y: { expression: "50-20*sin(PI*n*4-PI/2)" }
         }
+      },
+      "tri-top-right-c1": {
+        formula: {
+          x: { expression: "100+25*sin(PI*n*2)" },
+          y: { expression: "120-40*sin(PI*n*4)" }
+        }
+      },
+      "tri-top-right-c2": {
+        formula: {
+          x: { expression: "100+25*sin(PI*n*2-)" },
+          y: { expression: "120-40*sin(PI*n*4)" }
+        }
+      },
+      "tri-left-top-c1": {
+        formula: {
+          x: { expression: "100+25*sin(PI*n*2-)" },
+          y: { expression: "120-40*sin(PI*n*4)" }
+        }
+      },
+      "tri-left-top-c2": {
+        formula: {
+          x: { expression: "100+25*sin(PI*n*2-)" },
+          y: { expression: "120-40*sin(PI*n*4)" }
+        }
       }
     }
   };
