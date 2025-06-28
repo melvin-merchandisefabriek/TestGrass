@@ -20,7 +20,7 @@
     "global": { "x": -100, "y": 600 }
   },
   "controlPoints": [
-    { "id": "tri-top", "x": 100, "y": 20, "type": "anchor" },
+    { "id": "tri-top", "x": 100, "y": 0, "type": "anchor" },
     { "id": "tri-right", "x": 105, "y": 180, "type": "anchor" },
     { "id": "tri-left", "x": 95, "y": 180, "type": "anchor" },
     

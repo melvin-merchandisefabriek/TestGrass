@@ -4,6 +4,7 @@ import UI from './components/UI';
 import Environment from './components/Environment';
 import Player from './components/Player';
 import Shape from './components/Shape';
+import UnifiedSceneSVG from './components/UnifiedSceneSVG';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -17,9 +18,10 @@ function App() {
 
   return (
     <div className="App">
-        <UI />
-        <Environment />
-        <Player />
+        <UnifiedSceneSVG />
+        {/* <UI /> */}
+        {/* <Environment /> */}
+        {/* <Player /> */}
         {/* <Shape filePath={process.env.PUBLIC_URL + '/data/circleTemplate.json'} /> */}
     </div>
   );

@@ -66,7 +66,7 @@ const defaultShapeData = {
   }
 };
 
-const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shapeModifications, onClick }) => {
+const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shapeModifications, onClick, renderAsGroup = false }) => {
   // State for storing the loaded shape data
   const [shapeData, setShapeData] = useState(providedShapeData || defaultShapeData);
   
@@ -515,6 +515,76 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
     }
   }, [shapeData]); // Note: animationLoop and other functions are defined inside the component, so they're implicitly dependencies
   
+  if (renderAsGroup) {
+    // Render as SVG group for unified SVG
+    // Only apply svg position as a transform if explicitly provided in shapeModifications
+    let svgPos = { x: 0, y: 0 };
+    if (shapeModifications && shapeModifications.modifyPosition && shapeModifications.modifyPosition.svg) {
+      svgPos = shapeModifications.modifyPosition.svg;
+    }
+    return (
+      <g
+        ref={containerRef}
+        className="shape-component"
+        transform={`translate(${svgPos.x},${svgPos.y})`}
+        onClick={onClick}
+      >
+        {/* If fillPath is true, render a single combined path with fill */}
+        {shapeData.fillPath && (
+          <path
+            className="shape-fill-path"
+            d={(() => {
+              let pathData = '';
+              let firstPoint = null;
+              shapeData.segments.forEach((segment, index) => {
+                const points = segment.points.map(pointId => {
+                  const point = findPoint(pointId);
+                  return transformPoint(point);
+                });
+                if (index === 0) {
+                  if (segment.type === 'line') {
+                    const start = points[0];
+                    const end = points[1];
+                    pathData += `M ${start.x} ${start.y} L ${end.x} ${end.y} `;
+                    firstPoint = start;
+                  } else if (segment.type === 'bezier') {
+                    const start = points[0];
+                    const control1 = points[1];
+                    const control2 = points[2];
+                    const end = points[3];
+                    pathData += `M ${start.x} ${start.y} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                    firstPoint = start;
+                  }
+                } else {
+                  if (segment.type === 'line') {
+                    const end = points[1];
+                    pathData += `L ${end.x} ${end.y} `;
+                  } else if (segment.type === 'bezier') {
+                    const control1 = points[1];
+                    const control2 = points[2];
+                    const end = points[3];
+                    pathData += `C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${end.x} ${end.y} `;
+                  }
+                }
+              });
+              if (shapeData.closePath) {
+                pathData += 'Z';
+              }
+              return pathData;
+            })()}
+            fill={animatedStyle.fill || shapeData.style.fill || "none"}
+            stroke={animatedStyle.stroke || shapeData.style.stroke}
+            strokeWidth={animatedStyle.strokeWidth || shapeData.style.strokeWidth}
+          />
+        )}
+        {renderPositionAnchor}
+        {renderSegments()}
+        {renderControlPoints}
+        {renderControlPointNames}
+      </g>
+    );
+  }
+
   return (
     <div 
       ref={containerRef}

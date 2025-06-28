@@ -16,9 +16,21 @@ export const applyShapeModifications = (shape, modifications) => {
   
   // Apply position modifications
   if (modifications.modifyPosition) {
-    if (modifiedShape.position?.global) {
-      modifiedShape.position.global.x += modifications.modifyPosition.x || 0;
-      modifiedShape.position.global.y += modifications.modifyPosition.y || 0;
+    // Support svg and global keys for unified SVG logic
+    if (modifications.modifyPosition.svg) {
+      if (!modifiedShape.position) modifiedShape.position = {};
+      modifiedShape.position.svg = { ...modifications.modifyPosition.svg };
+    }
+    if (modifications.modifyPosition.global) {
+      if (!modifiedShape.position) modifiedShape.position = {};
+      modifiedShape.position.global = { ...modifications.modifyPosition.global };
+    }
+    // Legacy: if x/y provided at top level, apply to global
+    if (typeof modifications.modifyPosition.x === 'number' || typeof modifications.modifyPosition.y === 'number') {
+      if (modifiedShape.position?.global) {
+        modifiedShape.position.global.x += modifications.modifyPosition.x || 0;
+        modifiedShape.position.global.y += modifications.modifyPosition.y || 0;
+      }
     }
   }
   

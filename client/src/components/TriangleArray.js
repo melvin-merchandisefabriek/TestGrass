@@ -13,7 +13,7 @@ const TriangleArray = () => {
 
   return (
     <div className="grass-component">
-      {blades.map((pos, idx) => {
+      {/* {blades.map((pos, idx) => {
         // Create a unique controlPointAnimations for each blade with a phase offset and top y offset
         const controlPointAnimations = {
           "tri-top": {
@@ -68,9 +68,89 @@ const TriangleArray = () => {
             fill={`rgba(0, 105, 0, ${0.5 + 0.5 * Math.random()})`} // random opacity
           />
         );
-      })}
+      })} */}
     </div>
   );
 };
+
+// Helper to generate a random greenish color
+export function randomGrassColor() {
+  const h = 100 + Math.random() * 40; // green hue
+  const s = 60 + Math.random() * 20;
+  const l = 35 + Math.random() * 20;
+  return `hsl(${h},${s}%,${l}%)`;
+}
+
+// Export a function that returns an array of blade data for SVG rendering (with animation)
+export function getGrassBladeData(count = 10, width = 1920, height = 1080, baseHeight = 0) {
+  // Restore to the previous working version: use direct, larger base values (no scale factor)
+  const bladeBaseY = height - 180 - baseHeight; // 180 is the blade height
+  return Array.from({ length: count }, (_, i) => {
+    let baseX;
+    if (count === 1) {
+      baseX = width / 2;
+    } else {
+      baseX = (i / (count - 1)) * (width - 200) + 100; // leave margin, 100px on each side
+    }
+    let x;
+    if (i === 0 || i === count - 1) {
+      x = baseX;
+    } else {
+      x = baseX + Math.random() * 10; // jitter
+    }
+    const y = 0;
+    const phase = (i / count) * 2 * Math.PI;
+    const randomTopOffset = Math.random() * 10 - 2;
+    const controlPointAnimations = {
+      "tri-top": {
+        formula: {
+          x: { expression: `100+30*sin(PI*n*2-(PI/2)+${phase-1.2*Math.random()})` },
+          y: { expression: `${bladeBaseY + 50}+${randomTopOffset}` }
+        }
+      },
+      "tri-top-right-c1": {
+        formula: {
+          x: { expression: `105+15*sin(PI*n*2-1+${phase+0.3*Math.random()})` },
+          y: { expression: `${bladeBaseY + 100}+${10}*sin(PI*n*4)+${randomTopOffset}` }
+        }
+      },
+      "tri-top-right-c2": {
+        formula: {
+          x: { expression: `105+5*sin(PI*n*2-1+${phase+0.3*Math.random()})` },
+          y: { expression: `${bladeBaseY + 140}+${1}*sin(PI*n*4)+${randomTopOffset}` }
+        }
+      },
+      "tri-left-top-c1": {
+        formula: {
+          x: { expression: `95+5*sin(PI*n*2-1+${phase+0.3*Math.random()})` },
+          y: { expression: `${bladeBaseY + 140}+${1}*sin(PI*n*4)+${randomTopOffset}` }
+        }
+      },
+      "tri-left-top-c2": {
+        formula: {
+          x: { expression: `95+15*sin(PI*n*2-1+${phase+0.3*Math.random()})` },
+          y: { expression: `${bladeBaseY + 100}+${10}*sin(PI*n*4)+${randomTopOffset}` }
+        }
+      },
+      "tri-right": {
+        formula: {
+          x: { expression: `110` },
+          y: { expression: `${bladeBaseY + 180}`}
+        }
+      },
+      "tri-left": {
+        formula: {
+          x: { expression: `90` },
+          y: { expression: `${bladeBaseY + 180}`}
+        }
+      }
+    };
+    return {
+      position: { x, y },
+      controlPointAnimations,
+      fill: `rgba(0, 105, 0, ${0.5 + 0.5 * Math.random()})`
+    };
+  });
+}
 
 export default TriangleArray;
