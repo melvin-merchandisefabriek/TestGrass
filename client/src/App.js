@@ -6,6 +6,8 @@ import Player from './components/Player';
 import Shape from './components/Shape';
 import UnifiedSceneSVG from './components/UnifiedSceneSVG';
 import MinimalDot from './components/MinimalDot';
+import GrassBladeWebGLDemo from './components/GrassBladeWebGLDemo';
+import ShapeWebGLDemo from './components/ShapeWebGLDemo';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -19,7 +21,8 @@ function App() {
 
   return (
     <div className="App">
-        <MinimalDot />
+        {/* <MinimalDot /> */}
+        <ShapeWebGLDemo />
         {/* <UnifiedSceneSVG /> */}
         {/* <UI /> */}
         {/* <Environment /> */}

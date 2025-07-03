@@ -11,7 +11,7 @@ function randomControlPoints() {
 
 const MinimalDot = () => {
   // Generate N random curves
-  const N = 300;
+  const N = 10;
   const curves = Array.from({ length: N }, (_, i) => randomControlPoints());
   return <MultiBezierWebGL curves={curves} height="100vh" />;
 };
