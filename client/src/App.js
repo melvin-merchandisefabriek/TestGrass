@@ -5,6 +5,7 @@ import Environment from './components/Environment';
 import Player from './components/Player';
 import Shape from './components/Shape';
 import UnifiedSceneSVG from './components/UnifiedSceneSVG';
+import MinimalDot from './components/MinimalDot';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -18,7 +19,8 @@ function App() {
 
   return (
     <div className="App">
-        <UnifiedSceneSVG />
+        <MinimalDot />
+        {/* <UnifiedSceneSVG /> */}
         {/* <UI /> */}
         {/* <Environment /> */}
         {/* <Player /> */}
