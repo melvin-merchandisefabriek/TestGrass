@@ -82,25 +82,18 @@ export function randomGrassColor() {
 }
 
 // Export a function that returns an array of blade data for SVG rendering (with animation)
-export function getGrassBladeData(count = 10, width = 1920, height = 1080, baseHeight = 0) {
+export function getGrassBladeData(count, width, height = 1080, baseHeight = 0) {
   // Restore to the previous working version: use direct, larger base values (no scale factor)
   const bladeBaseY = height - 180 - baseHeight; // 180 is the blade height
   return Array.from({ length: count }, (_, i) => {
+    console.log('unc - count:', count);
     let baseX;
-    if (count === 1) {
-      baseX = width / 2;
-    } else {
-      baseX = (i / (count - 1)) * (width - 200) + 100; // leave margin, 100px on each side
-    }
+      baseX = (i / (count)) * (width*0.5-100); // leave margin, 100px on each side
     let x;
-    if (i === 0 || i === count - 1) {
-      x = baseX;
-    } else {
-      x = baseX + Math.random() * 10; // jitter
-    }
+    x = baseX + ((Math.random()-0.5) * 10); // jitter
     const y = 0;
     const phase = (i / count) * 2 * Math.PI;
-    const randomTopOffset = Math.random() * 10 - 2;
+    const randomTopOffset = Math.random() * 50 - 2;
     const controlPointAnimations = {
       "tri-top": {
         formula: {
