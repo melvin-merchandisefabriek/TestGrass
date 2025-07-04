@@ -32,13 +32,13 @@ function cubicBezier(t, p0, p1, p2, p3) {
 const triangleShape = {
   // Local shape coordinates (SVG-style)
   controlPoints: [
-    { id: "tri-top", x: "50", y: "0" },
-    { id: "tri-right", x: "100", y: "200" },
-    { id: "tri-left", x: "0", y: "200" },
-    { id: "tri-top-right-c1", x: "75", y: "60 + sway*40" },
-    { id: "tri-top-right-c2", x: "90", y: "120 + sway*20" },
-    { id: "tri-left-top-c1", x: "10", y: "120 + sway*20" },
-    { id: "tri-left-top-c2", x: "25", y: "60 + sway*40" }
+    { id: "tri-top", x: "50+sway*20", y: "0" },
+    { id: "tri-right", x: "60", y: "200" },
+    { id: "tri-left", x: "40", y: "200" },
+    { id: "tri-top-right-c1", x: "50+sway*20", y: "60" },
+    { id: "tri-top-right-c2", x: "60+sway*5", y: "120" },
+    { id: "tri-left-top-c1", x: "40+sway*5", y: "120 " },
+    { id: "tri-left-top-c2", x: "50+sway*20", y: "60" }
   ],
   segments: [
     { type: "bezier", points: ["tri-top", "tri-top-right-c1", "tri-top-right-c2", "tri-right"] },
