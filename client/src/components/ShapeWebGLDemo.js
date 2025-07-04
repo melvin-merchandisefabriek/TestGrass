@@ -75,20 +75,22 @@ const triangleShapeConfig = {
 
 const triangleShape = compileShapeConfig(triangleShapeConfig);
 
-const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
+const ShapeWebGLDemo = ({ bladeCount = 1, blades: bladesProp, height = '100vh' }) => {
   const canvasRef = useRef(null);
   const animRef = useRef();
-  // Single, large, centered blade for debug
-  const blades = [
-    {
-      baseX: 0, // center
-      baseY: 0, // center vertically
-      scale: 0.8, // fit nicely
-      phase: 0,
-      speed: 1,
-      swayAmount: 1
-    }
-  ];
+  // Use blades from prop if provided, else default to single blade
+  const blades = bladesProp && bladesProp.length > 0
+    ? bladesProp
+    : [
+        {
+          baseX: 0, // center
+          baseY: 0, // center vertically
+          scale: 0.8, // fit nicely
+          phase: 0,
+          speed: 1,
+          swayAmount: 1
+        }
+      ];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -129,7 +131,7 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
     const pos = gl.getAttribLocation(program, 'p');
     gl.enableVertexAttribArray(pos);
     // Buffers
-    const maxVerts = bladeCount * 128; // more for debug points
+    const maxVerts = blades.length * 128; // more for debug points
     const vertArray = new Float32Array(maxVerts * 2);
     const vertBuf = gl.createBuffer();
     // For debug: outline points
@@ -244,13 +246,7 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
       gl.clearColor(0.1, 0.1, 0.1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, vtx / 2);
-      // Draw outline as LINE_STRIP for debug (shows order and closure)
-      gl.bufferData(gl.ARRAY_BUFFER, outlineArray, gl.DYNAMIC_DRAW);
-      gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-      gl.lineWidth(2.0);
-      gl.drawArrays(gl.LINE_STRIP, 0, outlineLen / 2);
-      // Optionally, draw outline as points too:
-      // gl.drawArrays(gl.POINTS, 0, outlineLen / 2);
+      // (Debug outline drawing removed)
     }
 
     function animate() {

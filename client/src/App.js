@@ -8,6 +8,7 @@ import UnifiedSceneSVG from './components/UnifiedSceneSVG';
 import MinimalDot from './components/MinimalDot';
 import GrassBladeWebGLDemo from './components/GrassBladeWebGLDemo';
 import ShapeWebGLDemo from './components/ShapeWebGLDemo';
+import GrassFieldWebGL from './components/GrassFieldWebGL';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -22,7 +23,8 @@ function App() {
   return (
     <div className="App">
         {/* <MinimalDot /> */}
-        <ShapeWebGLDemo />
+        <GrassFieldWebGL bladeCount={100} />
+        {/* <ShapeWebGLDemo /> */}
         {/* <UnifiedSceneSVG /> */}
         {/* <UI /> */}
         {/* <Environment /> */}
