@@ -1,22 +1,32 @@
 import React, { useRef, useEffect } from 'react';
+import { earclip } from '../utils/earclip';
 
-// --- Simple homemade math expression parser ---
-function evalExpr(expr, vars) {
-  const safeMath = {
-    sin: Math.sin,
-    cos: Math.cos,
-    tan: Math.tan,
-    abs: Math.abs,
-    min: Math.min,
-    max: Math.max,
-    pow: Math.pow,
-    PI: Math.PI,
-    E: Math.E
+// --- Expression compiler for config-driven math ---
+const safeMath = {
+  sin: Math.sin,
+  cos: Math.cos,
+  tan: Math.tan,
+  abs: Math.abs,
+  min: Math.min,
+  max: Math.max,
+  pow: Math.pow,
+  PI: Math.PI,
+  E: Math.E
+};
+function compileExpr(expr) {
+  if (typeof expr === 'number') return () => expr;
+  if (typeof expr === 'function') return expr;
+  // If already compiled, return as is
+  if (expr && expr._compiled) return expr;
+  // Compile string to function
+  const fn = function(vars) {
+    const keys = Object.keys(vars).concat(Object.keys(safeMath));
+    const values = Object.values(vars).concat(Object.values(safeMath));
+    // eslint-disable-next-line no-new-func
+    return Function(...keys, `return (${expr});`)(...values);
   };
-  const keys = Object.keys(vars).concat(Object.keys(safeMath));
-  const values = Object.values(vars).concat(Object.values(safeMath));
-  // eslint-disable-next-line no-new-func
-  return Function(...keys, `return (${expr});`)(...values);
+  fn._compiled = true;
+  return fn;
 }
 
 // --- Cubic Bézier sampling ---
@@ -28,17 +38,30 @@ function cubicBezier(t, p0, p1, p2, p3) {
   ];
 }
 
-// --- Main WebGL shape demo ---
-const triangleShape = {
-  // Local shape coordinates (SVG-style)
+
+// --- Configurable shape loader ---
+function compileShapeConfig(shapeConfig) {
+  // Deep clone and compile all control point expressions
+  const compiled = JSON.parse(JSON.stringify(shapeConfig));
+  compiled.controlPoints = compiled.controlPoints.map(pt => ({
+    ...pt,
+    x: compileExpr(pt.x),
+    y: compileExpr(pt.y)
+  }));
+  // (Optional: compile other animatable fields here)
+  return compiled;
+}
+
+// Example: you can load this from JSON
+const triangleShapeConfig = {
   controlPoints: [
     { id: "tri-top", x: "50+sway*20", y: "0" },
     { id: "tri-right", x: "60", y: "200" },
     { id: "tri-left", x: "40", y: "200" },
-    { id: "tri-top-right-c1", x: "50+sway*20", y: "60" },
+    { id: "tri-top-right-c1", x: "50+sin(t+1)*20", y: "60" },
     { id: "tri-top-right-c2", x: "60+sway*5", y: "120" },
-    { id: "tri-left-top-c1", x: "40+sway*5", y: "120 " },
-    { id: "tri-left-top-c2", x: "50+sway*20", y: "60" }
+    { id: "tri-left-top-c1", x: "40+sway*5", y: "120" },
+    { id: "tri-left-top-c2", x: "50+sin(t+1)*20", y: "60" }
   ],
   segments: [
     { type: "bezier", points: ["tri-top", "tri-top-right-c1", "tri-top-right-c2", "tri-right"] },
@@ -49,6 +72,8 @@ const triangleShape = {
   width: 100,
   height: 200
 };
+
+const triangleShape = compileShapeConfig(triangleShapeConfig);
 
 const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
   const canvasRef = useRef(null);
@@ -122,10 +147,10 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
           ...params,
           sway: Math.sin(t * params.speed + params.phase) * params.swayAmount
         };
-        // Evaluate control points in local shape space
+        // Evaluate control points in local shape space (compiled math)
         const cp = {};
         for (const pt of triangleShape.controlPoints) {
-          cp[pt.id] = [evalExpr(pt.x, animVars), evalExpr(pt.y, animVars)];
+          cp[pt.id] = [pt.x(animVars), pt.y(animVars)];
         }
         // Map local shape to NDC, centered at (baseX, baseY), scaled
         function toNDC(x, y) {
@@ -134,7 +159,7 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
           const sy = (1 - y / triangleShape.height - 0.5) * 2 * params.scale;
           return [params.baseX + sx, params.baseY + sy];
         }
-        // Build outline by sampling segments
+        // Build outline by sampling segments (no duplicate points)
         let outline = [];
         for (let s = 0; s < triangleShape.segments.length; ++s) {
           const seg = triangleShape.segments[s];
@@ -155,37 +180,62 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
               bezierPoints.push(cubicBezier(j / N, a, c1, c2, b));
             }
             if (s === 0) {
-              outline.push(bezierPoints[0]);
-              outline.push(...bezierPoints.slice(1));
+              for (let j = 0; j < bezierPoints.length; ++j) {
+                outline.push(bezierPoints[j]);
+              }
             } else {
-              outline.push(...bezierPoints.slice(1)); // skip first to avoid duplicate
+              for (let j = 1; j < bezierPoints.length; ++j) {
+                outline.push(bezierPoints[j]);
+              }
             }
           }
         }
-        // Ensure outline is closed
-        if (outline.length > 2) {
-          const first = outline[0], last = outline[outline.length - 1];
-          if (Math.abs(first[0] - last[0]) > 1e-6 || Math.abs(first[1] - last[1]) > 1e-6) {
-            outline.push(first);
-          }
-        }
+        // --- DEBUG: Log outline and triangles ---
         if (i === 0) {
           console.log('First blade outline:', outline);
         }
-        // Triangulate: simple fan from first point
-        for (let j = 1; j < outline.length - 1; ++j) {
-          vertArray[vtx++] = outline[0][0];
-          vertArray[vtx++] = outline[0][1];
-          vertArray[vtx++] = outline[j][0];
-          vertArray[vtx++] = outline[j][1];
-          vertArray[vtx++] = outline[j+1][0];
-          vertArray[vtx++] = outline[j+1][1];
+        // Remove duplicate last point if outline is closed (just in case)
+        let outlinePoints = outline;
+        if (outline.length > 2) {
+          const first = outline[0], last = outline[outline.length - 1];
+          if (Math.abs(first[0] - last[0]) < 1e-6 && Math.abs(first[1] - last[1]) < 1e-6) {
+            outlinePoints = outline.slice(0, -1);
+          }
         }
-        // For debug: store outline points
-        for (let j = 0; j < outline.length; ++j) {
-          outlineArray[outlineLen++] = outline[j][0];
-          outlineArray[outlineLen++] = outline[j][1];
+        // Ensure counter-clockwise order for ear clipping
+        function polygonArea(pts) {
+          let area = 0;
+          for (let i = 0, n = pts.length; i < n; ++i) {
+            const [x0, y0] = pts[i];
+            const [x1, y1] = pts[(i + 1) % n];
+            area += (x0 * y1 - x1 * y0);
+          }
+          return area / 2;
         }
+        if (polygonArea(outlinePoints) < 0) {
+          outlinePoints = outlinePoints.slice().reverse();
+        }
+        const tris = earclip(outlinePoints);
+        if (i === 0) {
+          console.log('Triangles:', tris);
+        }
+        for (let k = 0; k < tris.length; ++k) {
+          const [a, b, c] = tris[k];
+          vertArray[vtx++] = outlinePoints[a][0];
+          vertArray[vtx++] = outlinePoints[a][1];
+          vertArray[vtx++] = outlinePoints[b][0];
+          vertArray[vtx++] = outlinePoints[b][1];
+          vertArray[vtx++] = outlinePoints[c][0];
+          vertArray[vtx++] = outlinePoints[c][1];
+        }
+        // For debug: store outline points (for line strip)
+        for (let j = 0; j < outlinePoints.length; ++j) {
+          outlineArray[outlineLen++] = outlinePoints[j][0];
+          outlineArray[outlineLen++] = outlinePoints[j][1];
+        }
+        // Also add the first point again to close the loop visually
+        outlineArray[outlineLen++] = outlinePoints[0][0];
+        outlineArray[outlineLen++] = outlinePoints[0][1];
       }
       // Upload and draw triangles
       gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
@@ -194,10 +244,13 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
       gl.clearColor(0.1, 0.1, 0.1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, vtx / 2);
-      // Draw outline as points for debug
+      // Draw outline as LINE_STRIP for debug (shows order and closure)
       gl.bufferData(gl.ARRAY_BUFFER, outlineArray, gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
-      gl.drawArrays(gl.POINTS, 0, outlineLen / 2);
+      gl.lineWidth(2.0);
+      gl.drawArrays(gl.LINE_STRIP, 0, outlineLen / 2);
+      // Optionally, draw outline as points too:
+      // gl.drawArrays(gl.POINTS, 0, outlineLen / 2);
     }
 
     function animate() {
