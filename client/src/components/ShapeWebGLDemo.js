@@ -57,8 +57,8 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
   const blades = [
     {
       baseX: 0, // center
-      baseY: 0.2, // higher up
-      scale: 0.7, // much larger
+      baseY: 0, // center vertically
+      scale: 0.8, // fit nicely
       phase: 0,
       speed: 1,
       swayAmount: 1
@@ -67,11 +67,14 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    // Always fill viewport
-    canvas.style.width = '100vw';
-    canvas.style.height = '100vh';
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      canvas.style.width = '100vw';
+      canvas.style.height = '100vh';
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
     const gl = canvas.getContext('webgl');
     if (!gl) {
       console.error('WebGL not supported');
@@ -101,12 +104,16 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
     const pos = gl.getAttribLocation(program, 'p');
     gl.enableVertexAttribArray(pos);
     // Buffers
-    const maxVerts = bladeCount * 64; // plenty for all sampled points
+    const maxVerts = bladeCount * 128; // more for debug points
     const vertArray = new Float32Array(maxVerts * 2);
     const vertBuf = gl.createBuffer();
+    // For debug: outline points
+    const outlineArray = new Float32Array(maxVerts * 2);
+    let outlineLen = 0;
 
     function draw(t) {
       let vtx = 0;
+      outlineLen = 0;
       for (let i = 0; i < blades.length; ++i) {
         const params = blades[i];
         // Animation variables
@@ -122,23 +129,44 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
         }
         // Map local shape to NDC, centered at (baseX, baseY), scaled
         function toNDC(x, y) {
+          // Map (0,0) at center, Y up, X right, both in [-1,1]
           const sx = (x / triangleShape.width - 0.5) * 2 * params.scale;
-          const sy = (1 - y / triangleShape.height) * 2 * params.scale;
+          const sy = (1 - y / triangleShape.height - 0.5) * 2 * params.scale;
           return [params.baseX + sx, params.baseY + sy];
         }
         // Build outline by sampling segments
         let outline = [];
-        for (const seg of triangleShape.segments) {
+        for (let s = 0; s < triangleShape.segments.length; ++s) {
+          const seg = triangleShape.segments[s];
           if (seg.type === 'line') {
             const a = toNDC(...cp[seg.points[0]]);
             const b = toNDC(...cp[seg.points[1]]);
-            outline.push(a, b);
+            if (s === 0) {
+              outline.push(a);
+              outline.push(b);
+            } else {
+              outline.push(b);
+            }
           } else if (seg.type === 'bezier') {
             const [a, c1, c2, b] = seg.points.map(id => toNDC(...cp[id]));
-            const N = 12;
+            const N = 16;
+            let bezierPoints = [];
             for (let j = 0; j <= N; ++j) {
-              outline.push(cubicBezier(j / N, a, c1, c2, b));
+              bezierPoints.push(cubicBezier(j / N, a, c1, c2, b));
             }
+            if (s === 0) {
+              outline.push(bezierPoints[0]);
+              outline.push(...bezierPoints.slice(1));
+            } else {
+              outline.push(...bezierPoints.slice(1)); // skip first to avoid duplicate
+            }
+          }
+        }
+        // Ensure outline is closed
+        if (outline.length > 2) {
+          const first = outline[0], last = outline[outline.length - 1];
+          if (Math.abs(first[0] - last[0]) > 1e-6 || Math.abs(first[1] - last[1]) > 1e-6) {
+            outline.push(first);
           }
         }
         if (i === 0) {
@@ -153,14 +181,23 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
           vertArray[vtx++] = outline[j+1][0];
           vertArray[vtx++] = outline[j+1][1];
         }
+        // For debug: store outline points
+        for (let j = 0; j < outline.length; ++j) {
+          outlineArray[outlineLen++] = outline[j][0];
+          outlineArray[outlineLen++] = outline[j][1];
+        }
       }
-      // Upload and draw
+      // Upload and draw triangles
       gl.bindBuffer(gl.ARRAY_BUFFER, vertBuf);
       gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
       gl.clearColor(0.1, 0.1, 0.1, 1);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, vtx / 2);
+      // Draw outline as points for debug
+      gl.bufferData(gl.ARRAY_BUFFER, outlineArray, gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+      gl.drawArrays(gl.POINTS, 0, outlineLen / 2);
     }
 
     function animate() {
@@ -169,7 +206,10 @@ const ShapeWebGLDemo = ({ bladeCount = 1, height = '100vh' }) => {
       animRef.current = requestAnimationFrame(animate);
     }
     animate();
-    return () => cancelAnimationFrame(animRef.current);
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('resize', resizeCanvas);
+    };
   }, []);
   return <canvas ref={canvasRef} style={{ display: 'block', width: '100vw', height: '100vh' }} />;
 };
