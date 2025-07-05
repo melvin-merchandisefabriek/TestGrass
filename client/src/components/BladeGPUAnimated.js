@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import bladeConfig from '../bladeConfig.json';
 
 // Quadratic Bezier helper
 function quadBezier(t, p0, p1, p2) {
@@ -9,24 +10,37 @@ function quadBezier(t, p0, p1, p2) {
     ];
 }
 
-const vertexShaderSource = `
+// Helper to generate the vertex shader source with injected sway formula
+function getVertexShaderSource(swayFormula) {
+    return `
 attribute vec2 position;
 attribute float bladeIndex;
+attribute float bladeHeight;
+attribute vec3 bladeColor;
 uniform float time;
 uniform float bladeCount;
+uniform float spread;
+uniform float spreadOffset;
+uniform float phaseStep;
+uniform float swaySpeed;
+uniform float swayAmount;
+varying vec3 vColor;
 void main() {
-    // Spread blades horizontally and animate phase
-    float xOffset = (bladeIndex / (bladeCount - 1.0)) * 1.6 - 0.8; // spread in [-0.8, 0.8]
-    float phase = bladeIndex * 0.7;
-    float sway = sin(time * 2.0 + position.y * 2.0 + phase) * 0.2 * position.y;
-    gl_Position = vec4(position.x + xOffset + sway, position.y, 0.0, 1.0);
+    float xOffset = (bladeIndex / (bladeCount - 1.0)) * spread + spreadOffset;
+    float phase = bladeIndex * phaseStep;
+    float sway = ${swayFormula};
+    float y = position.y * bladeHeight;
+    gl_Position = vec4(position.x + xOffset + sway, y, 0.0, 1.0);
+    vColor = bladeColor;
 }
 `;
+}
 
 const fragmentShaderSource = `
 precision mediump float;
+varying vec3 vColor;
 void main() {
-    gl_FragColor = vec4(0.2, 0.8, 0.3, 1.0); // green
+    gl_FragColor = vec4(vColor, 1.0);
 }
 `;
 
@@ -40,7 +54,7 @@ function createShader(gl, type, source) {
     return shader;
 }
 
-const BladeGPUAnimated = ({ bladeCount = 5000 }) => {
+const BladeGPUAnimated = ({ bladeCount = 10 }) => {
     const canvasRef = useRef();
 
     useEffect(() => {
@@ -51,12 +65,12 @@ const BladeGPUAnimated = ({ bladeCount = 5000 }) => {
         if (!gl) return;
 
         // Geometry for one blade (triangle with two curved sides)
-        const baseLeft = [-0.05, 0.0];
-        const baseRight = [0.05, 0.0];
-        const tip = [0.0, 0.5];
-        const leftCtrl = [-0.09, 0.3];
-        const rightCtrl = [0.09, 0.3];
-        const N = 24;
+        const baseLeft = bladeConfig.baseLeft;
+        const baseRight = bladeConfig.baseRight;
+        const tip = bladeConfig.tip;
+        const leftCtrl = bladeConfig.leftCtrl;
+        const rightCtrl = bladeConfig.rightCtrl;
+        const N = bladeConfig.curveResolution;
         const leftEdge = [];
         const rightEdge = [];
         for (let i = 0; i <= N; ++i) {
@@ -73,19 +87,32 @@ const BladeGPUAnimated = ({ bladeCount = 5000 }) => {
         bladeVerts.push(...baseLeft);
         const vertsPerBlade = bladeVerts.length / 2;
 
-        // Interleave all blades
+        // Interleave all blades and per-blade attributes
         const allVerts = [];
         const allBladeIndices = [];
+        const allBladeHeights = [];
+        const allBladeColors = [];
         for (let b = 0; b < bladeCount; ++b) {
+            // Random height and color per blade
+            const height = bladeConfig.heightMin + Math.random() * (bladeConfig.heightMax - bladeConfig.heightMin);
+            const g = bladeConfig.colorGMin + Math.random() * (bladeConfig.colorGMax - bladeConfig.colorGMin);
+            const r = bladeConfig.colorRMin + Math.random() * (bladeConfig.colorRMax - bladeConfig.colorRMin);
+            const bCol = bladeConfig.colorBMin + Math.random() * (bladeConfig.colorBMax - bladeConfig.colorBMin);
+            const bladeColor = [r, g, bCol];
             for (let i = 0; i < vertsPerBlade; ++i) {
                 allVerts.push(bladeVerts[i * 2], bladeVerts[i * 2 + 1]);
                 allBladeIndices.push(b);
+                allBladeHeights.push(height);
+                allBladeColors.push(...bladeColor);
             }
         }
         const vertArray = new Float32Array(allVerts);
         const bladeIndexArray = new Float32Array(allBladeIndices);
+        const bladeHeightArray = new Float32Array(allBladeHeights);
+        const bladeColorArray = new Float32Array(allBladeColors);
 
         // Compile shaders and link program
+        const vertexShaderSource = getVertexShaderSource(bladeConfig.swayFormula || 'sin(time * swaySpeed + position.y * 2.0 + phase) * swayAmount * position.y');
         const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
         const program = gl.createProgram();
@@ -97,21 +124,40 @@ const BladeGPUAnimated = ({ bladeCount = 5000 }) => {
         // Set up attributes
         const posLoc = gl.getAttribLocation(program, 'position');
         const bladeIdxLoc = gl.getAttribLocation(program, 'bladeIndex');
+        const bladeHeightLoc = gl.getAttribLocation(program, 'bladeHeight');
+        const bladeColorLoc = gl.getAttribLocation(program, 'bladeColor');
+        // Position
         const buffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
         gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(posLoc);
         gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
-
-        // Blade index attribute
+        // Blade index
         const bladeIdxBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, bladeIdxBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, bladeIndexArray, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(bladeIdxLoc);
         gl.vertexAttribPointer(bladeIdxLoc, 1, gl.FLOAT, false, 0, 0);
+        // Blade height
+        const bladeHeightBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bladeHeightBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, bladeHeightArray, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(bladeHeightLoc);
+        gl.vertexAttribPointer(bladeHeightLoc, 1, gl.FLOAT, false, 0, 0);
+        // Blade color
+        const bladeColorBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bladeColorBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, bladeColorArray, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(bladeColorLoc);
+        gl.vertexAttribPointer(bladeColorLoc, 3, gl.FLOAT, false, 0, 0);
 
         const timeLoc = gl.getUniformLocation(program, 'time');
         const bladeCountLoc = gl.getUniformLocation(program, 'bladeCount');
+        const spreadLoc = gl.getUniformLocation(program, 'spread');
+        const spreadOffsetLoc = gl.getUniformLocation(program, 'spreadOffset');
+        const phaseStepLoc = gl.getUniformLocation(program, 'phaseStep');
+        const swaySpeedLoc = gl.getUniformLocation(program, 'swaySpeed');
+        const swayAmountLoc = gl.getUniformLocation(program, 'swayAmount');
 
         function render() {
             gl.viewport(0, 0, canvas.width, canvas.height);
@@ -120,6 +166,11 @@ const BladeGPUAnimated = ({ bladeCount = 5000 }) => {
             gl.useProgram(program);
             gl.uniform1f(timeLoc, performance.now() * 0.001);
             gl.uniform1f(bladeCountLoc, bladeCount);
+            gl.uniform1f(spreadLoc, bladeConfig.spread);
+            gl.uniform1f(spreadOffsetLoc, bladeConfig.spreadOffset);
+            gl.uniform1f(phaseStepLoc, bladeConfig.phaseStep);
+            gl.uniform1f(swaySpeedLoc, bladeConfig.swaySpeed);
+            gl.uniform1f(swayAmountLoc, bladeConfig.swayAmount);
             for (let b = 0; b < bladeCount; ++b) {
                 const offset = b * vertsPerBlade;
                 gl.drawArrays(gl.TRIANGLE_FAN, offset, vertsPerBlade);
