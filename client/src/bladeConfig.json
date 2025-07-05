@@ -1,9 +1,9 @@
 {
-  "baseLeft": [-0.01, 0.0],
-  "baseRight": [0.01, 0.0],
+  "baseLeft": [-0.005, 0.0],
+  "baseRight": [0.005, 0.0],
   "tip": [0.0, "0.1*(0.2*bladeRandom+0.8)"],
-  "leftCtrl": [-0.005, 0.05],
-  "rightCtrl": [0.005, 0.05],
+  "leftCtrl": [-0.0025, 0.05],
+  "rightCtrl": [0.0025, 0.05],
   "curveResolution": 24,
   "heightMin": 0.7,
   "heightMax": 1.3,
