@@ -54,7 +54,7 @@ function createShader(gl, type, source) {
     return shader;
 }
 
-const BladeGPUAnimated = ({ bladeCount = 100 }) => {
+const BladeGPUAnimated = ({ bladeCount = 300 }) => {
     const canvasRef = useRef();
 
     useEffect(() => {
@@ -64,34 +64,18 @@ const BladeGPUAnimated = ({ bladeCount = 100 }) => {
         const gl = canvas.getContext('webgl');
         if (!gl) return;
 
-        // Geometry for one blade (triangle with two curved sides)
+        // Interleave all blades and per-blade attributes, with per-blade randomized tip
         const baseLeft = bladeConfig.baseLeft;
         const baseRight = bladeConfig.baseRight;
-        const tip = bladeConfig.tip;
         const leftCtrl = bladeConfig.leftCtrl;
         const rightCtrl = bladeConfig.rightCtrl;
         const N = bladeConfig.curveResolution;
-        const leftEdge = [];
-        const rightEdge = [];
-        for (let i = 0; i <= N; ++i) {
-            const t = i / N;
-            leftEdge.push(quadBezier(t, baseLeft, leftCtrl, tip));
-            rightEdge.push(quadBezier(t, baseRight, rightCtrl, tip));
-        }
-        // Build interleaved triangle strip for one blade (for proper fill)
-        const bladeVerts = [];
-        for (let i = 0; i <= N; ++i) {
-            bladeVerts.push(...leftEdge[i]);
-            bladeVerts.push(...rightEdge[i]);
-        }
-        const vertsPerBlade = bladeVerts.length / 2;
-
-        // Interleave all blades and per-blade attributes
         const allVerts = [];
         const allBladeIndices = [];
         const allBladeHeights = [];
         const allBladeColors = [];
         const allBladeRandoms = [];
+        let vertsPerBlade = 0;
         for (let b = 0; b < bladeCount; ++b) {
             // Random height and color per blade
             const height = bladeConfig.heightMin + Math.random() * (bladeConfig.heightMax - bladeConfig.heightMin);
@@ -101,6 +85,32 @@ const BladeGPUAnimated = ({ bladeCount = 100 }) => {
             const bladeColor = [r, g, bCol];
             // Random value for blade sway (ensure unique per blade)
             const bladeRandom = Math.random();
+            // Randomize tip per blade
+            let tip = bladeConfig.tip;
+            // If tip is an array and contains bladeRandom, evaluate it
+            if (Array.isArray(tip) && typeof tip[1] === 'string' && tip[1].includes('bladeRandom')) {
+                // Evaluate the y expression for tip
+                // Example: [0.0, "0.1*bladeRandom"]
+                // eslint-disable-next-line no-eval
+                tip = [tip[0], eval(tip[1].replace(/bladeRandom/g, bladeRandom))];
+            } else if (Array.isArray(tip) && typeof tip[1] === 'number') {
+                tip = [tip[0], tip[1]];
+            }
+            // Build geometry for this blade
+            const leftEdge = [];
+            const rightEdge = [];
+            for (let i = 0; i <= N; ++i) {
+                const t = i / N;
+                leftEdge.push(quadBezier(t, baseLeft, leftCtrl, tip));
+                rightEdge.push(quadBezier(t, baseRight, rightCtrl, tip));
+            }
+            // Build interleaved triangle strip for one blade (for proper fill)
+            const bladeVerts = [];
+            for (let i = 0; i <= N; ++i) {
+                bladeVerts.push(...leftEdge[i]);
+                bladeVerts.push(...rightEdge[i]);
+            }
+            if (b === 0) vertsPerBlade = bladeVerts.length / 2;
             for (let i = 0; i < vertsPerBlade; ++i) {
                 allVerts.push(bladeVerts[i * 2], bladeVerts[i * 2 + 1]);
                 allBladeIndices.push(b);
@@ -134,7 +144,7 @@ void main() {
     float xOffset = (bladeIndex / (bladeCount - 1.0)) * spread + spreadOffset;
     float phase = bladeIndex * phaseStep;
     float sway = ${bladeConfig.swayFormula};
-    float y = position.y * bladeHeight;
+    float y = -1.0 + position.y * bladeHeight * 2.0;
     gl_Position = vec4(position.x + xOffset + sway, y, 0.0, 1.0);
     vColor = bladeColor;
 }
