@@ -15,8 +15,8 @@
   "colorBMax": 0.4,
   "spread": 2.0,
   "spreadOffset": -1.0,
-  "phaseStep": 0.1,
+  "phaseStep": 0.01,
   "swaySpeed": 2.0,
   "swayAmount": 0.05,
-  "swayFormula": "(0.2*bladeRandom+0.8)*sin(time * swaySpeed + phase-(2.3*bladeRandom+0.2) - 30.5*position.y*((position.y*5.0)-0.5)) * swayAmount * (position.y*10.0* (position.y*3.0+0.5))"
+  "swayFormula": "(0.2*bladeRandom+0.8)*sin(time * swaySpeed + phase -(0.8*bladeRandom+0.2) - 30.5*position.y*((position.y*5.0)-0.5)) * swayAmount * (position.y*10.0* (position.y*3.0+0.5))"
 }
