@@ -72,19 +72,23 @@ const GrassBladeWebGLDemo = ({ bladeCount = 100, height = '100vh' }) => {
     const maxVerts = bladeCount * 3;
     const vertArray = new Float32Array(maxVerts * 2);
     const vertBuf = gl.createBuffer();
+    // Reusable objects to avoid per-frame allocations
+    const animVars = {};
+    const animResults = {};
 
     function draw(t) {
       let vtx = 0;
       for (let i = 0; i < bladeCount; ++i) {
         const params = blades[i];
-        // Evaluate animation variables
-        const animVars = {
-          t,
-          ...params,
-          ...Object.fromEntries(
-            Object.entries(bladeConfig.animation).map(([k, expr]) => [k, evalExpr(expr, { t, ...params })])
-          )
-        };
+        // Copy params into animVars
+        Object.assign(animVars, params);
+        animVars.t = t;
+        // Compute animation results and store in animResults
+        for (const [k, expr] of Object.entries(bladeConfig.animation)) {
+          animResults[k] = evalExpr(expr, animVars);
+        }
+        // Merge animResults into animVars
+        Object.assign(animVars, animResults);
         // Compute control points
         bladeConfig.controlPoints.forEach(pt => {
           vertArray[vtx++] = evalExpr(pt.x, animVars);
