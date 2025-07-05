@@ -1,9 +1,9 @@
 {
-  "baseLeft": [-0.07, 0.0],
-  "baseRight": [0.07, 0.0],
+  "baseLeft": [-0.01, 0.0],
+  "baseRight": [0.01, 0.0],
   "tip": [0.0, 0.5],
-  "leftCtrl": [-0.03, 0.3],
-  "rightCtrl": [0.03, 0.3],
+  "leftCtrl": [-0.005, 0.3],
+  "rightCtrl": [0.005, 0.3],
   "curveResolution": 24,
   "heightMin": 0.7,
   "heightMax": 1.3,
@@ -15,8 +15,8 @@
   "colorBMax": 0.4,
   "spread": 1.6,
   "spreadOffset": -0.8,
-  "phaseStep": 0.7,
+  "phaseStep": 0.1,
   "swaySpeed": 2.0,
-  "swayAmount": 0.2,
-  "swayFormula": "sin(time * swaySpeed + phase*-0.5*position.y) * swayAmount * position.y * position.y"
+  "swayAmount": 0.12,
+  "swayFormula": "bladeRandom*sin(time * swaySpeed + phase*bladeRandom - 10.5*position.y*(position.y-0.5)) * swayAmount * position.y* (position.y+0.5)"
 }

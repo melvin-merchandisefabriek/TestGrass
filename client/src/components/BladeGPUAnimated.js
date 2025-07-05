@@ -54,7 +54,7 @@ function createShader(gl, type, source) {
     return shader;
 }
 
-const BladeGPUAnimated = ({ bladeCount = 10 }) => {
+const BladeGPUAnimated = ({ bladeCount = 100 }) => {
     const canvasRef = useRef();
 
     useEffect(() => {
@@ -78,13 +78,12 @@ const BladeGPUAnimated = ({ bladeCount = 10 }) => {
             leftEdge.push(quadBezier(t, baseLeft, leftCtrl, tip));
             rightEdge.push(quadBezier(t, baseRight, rightCtrl, tip));
         }
-        // Build triangle fan for one blade
+        // Build interleaved triangle strip for one blade (for proper fill)
         const bladeVerts = [];
-        for (let i = 0; i < N; ++i) bladeVerts.push(...leftEdge[i]);
-        bladeVerts.push(...tip);
-        for (let i = N - 1; i > 0; --i) bladeVerts.push(...rightEdge[i]);
-        bladeVerts.push(...baseRight);
-        bladeVerts.push(...baseLeft);
+        for (let i = 0; i <= N; ++i) {
+            bladeVerts.push(...leftEdge[i]);
+            bladeVerts.push(...rightEdge[i]);
+        }
         const vertsPerBlade = bladeVerts.length / 2;
 
         // Interleave all blades and per-blade attributes
@@ -92,6 +91,7 @@ const BladeGPUAnimated = ({ bladeCount = 10 }) => {
         const allBladeIndices = [];
         const allBladeHeights = [];
         const allBladeColors = [];
+        const allBladeRandoms = [];
         for (let b = 0; b < bladeCount; ++b) {
             // Random height and color per blade
             const height = bladeConfig.heightMin + Math.random() * (bladeConfig.heightMax - bladeConfig.heightMin);
@@ -99,20 +99,46 @@ const BladeGPUAnimated = ({ bladeCount = 10 }) => {
             const r = bladeConfig.colorRMin + Math.random() * (bladeConfig.colorRMax - bladeConfig.colorRMin);
             const bCol = bladeConfig.colorBMin + Math.random() * (bladeConfig.colorBMax - bladeConfig.colorBMin);
             const bladeColor = [r, g, bCol];
+            // Random value for blade sway (ensure unique per blade)
+            const bladeRandom = Math.random();
             for (let i = 0; i < vertsPerBlade; ++i) {
                 allVerts.push(bladeVerts[i * 2], bladeVerts[i * 2 + 1]);
                 allBladeIndices.push(b);
                 allBladeHeights.push(height);
                 allBladeColors.push(...bladeColor);
+                allBladeRandoms.push(bladeRandom);
             }
         }
         const vertArray = new Float32Array(allVerts);
         const bladeIndexArray = new Float32Array(allBladeIndices);
         const bladeHeightArray = new Float32Array(allBladeHeights);
         const bladeColorArray = new Float32Array(allBladeColors);
+        const bladeRandomArray = new Float32Array(allBladeRandoms);
 
         // Compile shaders and link program
-        const vertexShaderSource = getVertexShaderSource(bladeConfig.swayFormula || 'sin(time * swaySpeed + position.y * 2.0 + phase) * swayAmount * position.y');
+        const vertexShaderSource = `
+attribute vec2 position;
+attribute float bladeIndex;
+attribute float bladeHeight;
+attribute vec3 bladeColor;
+attribute float bladeRandom;
+uniform float time;
+uniform float bladeCount;
+uniform float spread;
+uniform float spreadOffset;
+uniform float phaseStep;
+uniform float swaySpeed;
+uniform float swayAmount;
+varying vec3 vColor;
+void main() {
+    float xOffset = (bladeIndex / (bladeCount - 1.0)) * spread + spreadOffset;
+    float phase = bladeIndex * phaseStep;
+    float sway = ${bladeConfig.swayFormula};
+    float y = position.y * bladeHeight;
+    gl_Position = vec4(position.x + xOffset + sway, y, 0.0, 1.0);
+    vColor = bladeColor;
+}
+`;
         const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
         const fs = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
         const program = gl.createProgram();
@@ -150,6 +176,13 @@ const BladeGPUAnimated = ({ bladeCount = 10 }) => {
         gl.bufferData(gl.ARRAY_BUFFER, bladeColorArray, gl.STATIC_DRAW);
         gl.enableVertexAttribArray(bladeColorLoc);
         gl.vertexAttribPointer(bladeColorLoc, 3, gl.FLOAT, false, 0, 0);
+        // Blade random attribute setup (must be after all other attributes, and not overwritten)
+        const bladeRandLoc = gl.getAttribLocation(program, 'bladeRandom');
+        const bladeRandBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bladeRandBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, bladeRandomArray, gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(bladeRandLoc);
+        gl.vertexAttribPointer(bladeRandLoc, 1, gl.FLOAT, false, 0, 0);
 
         const timeLoc = gl.getUniformLocation(program, 'time');
         const bladeCountLoc = gl.getUniformLocation(program, 'bladeCount');
@@ -173,7 +206,7 @@ const BladeGPUAnimated = ({ bladeCount = 10 }) => {
             gl.uniform1f(swayAmountLoc, bladeConfig.swayAmount);
             for (let b = 0; b < bladeCount; ++b) {
                 const offset = b * vertsPerBlade;
-                gl.drawArrays(gl.TRIANGLE_FAN, offset, vertsPerBlade);
+                gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertsPerBlade);
             }
             requestAnimationFrame(render);
         }
