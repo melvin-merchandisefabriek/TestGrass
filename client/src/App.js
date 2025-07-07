@@ -10,6 +10,7 @@ import GrassBladeWebGLDemo from './components/GrassBladeWebGLDemo';
 import ShapeWebGLDemo from './components/ShapeWebGLDemo';
 import GrassFieldWebGL from './components/GrassFieldWebGL';
 import BladeGPUAnimated from './components/BladeGPUAnimated';
+import BezierShapeDemo from './BezierShapeDemo';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
@@ -23,7 +24,8 @@ function App() {
 
   return (
     <div className="App">
-        <BladeGPUAnimated />
+        {/* <BladeGPUAnimated /> */}
+        <BezierShapeDemo />
         {/* <MinimalDot /> */}
         {/* <GrassFieldWebGL bladeCount={500} /> */}
         {/* <ShapeWebGLDemo /> */}
