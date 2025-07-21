@@ -24,8 +24,8 @@ function App() {
 
   return (
     <div className="App">
-        {/* <BladeGPUAnimated /> */}
-        <BezierShapeDemo />
+        <BladeGPUAnimated />
+        {/* <BezierShapeDemo /> */}
         {/* <MinimalDot /> */}
         {/* <GrassFieldWebGL bladeCount={500} /> */}
         {/* <ShapeWebGLDemo /> */}
