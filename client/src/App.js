@@ -10,6 +10,9 @@ import GrassBladeWebGLDemo from './components/GrassBladeWebGLDemo';
 import ShapeWebGLDemo from './components/ShapeWebGLDemo';
 import GrassFieldWebGL from './components/GrassFieldWebGL';
 import BladeGPUAnimated from './components/BladeGPUAnimated';
+import SimpleWebGLTriangle from './components/SimpleWebGLTriangle';
+import AnimatedWebGLTriangle from './components/AnimatedWebGLTriangle';
+import SharedAnimatedTriangles from './components/SharedAnimatedTriangles';
 import BezierShapeDemo from './BezierShapeDemo';
 
 function App() {
@@ -24,7 +27,10 @@ function App() {
 
   return (
     <div className="App">
-        <BladeGPUAnimated />
+        <SharedAnimatedTriangles />
+        {/* <AnimatedWebGLTriangle /> */}
+        {/* <SimpleWebGLTriangle /> */}
+        {/* <BladeGPUAnimated /> */}
         {/* <BezierShapeDemo /> */}
         {/* <MinimalDot /> */}
         {/* <GrassFieldWebGL bladeCount={500} /> */}
