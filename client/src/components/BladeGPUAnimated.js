@@ -54,7 +54,7 @@ function createShader(gl, type, source) {
     return shader;
 }
 
-const BladeGPUAnimated = ({ bladeCount = 200 }) => {
+const BladeGPUAnimated = ({ bladeCount = 5 }) => {
     const canvasRef = useRef();
 
     useEffect(() => {
