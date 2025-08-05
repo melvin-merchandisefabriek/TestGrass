@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "description": "Normal state for menu button with smooth collapse animation",
+  "viewBox": "0 0 200 300",
+  "width": 200,
+  "height": 300,
+  "animations": {
+    "duration": 1,
+    "loops": 1,
+    "controlPointAnimations": {
+      "sq-1": {
+        "formula": {
+          "x": {
+            "expression": "15 + 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          },
+          "y": {
+            "expression": "15 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          }
+        }
+      },
+      "sq-2": {
+        "formula": {
+          "x": {
+            "expression": "185 - 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          },
+          "y": {
+            "expression": "15 + 105 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          }
+        }
+      },
+      "sq-3": {
+        "formula": {
+          "x": {
+            "expression": "185 - 60 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          },
+          "y": {
+            "expression": "230 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          }
+        }
+      },
+      "sq-4": {
+        "formula": {
+          "x": {
+            "expression": "15 + 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          },
+          "y": {
+            "expression": "230 - 55 * (1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"
+          }
+        }
+      }
+    },
+    "styleAnimations": {
+      "fill": "rgba(255, 255, 255, ${0.9 * (1-n)})"
+    }
+  },
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(79, 195, 247, 0.1)",
+    "stroke": "#FFFFFF",
+    "strokeWidth": 1
+  }
+}

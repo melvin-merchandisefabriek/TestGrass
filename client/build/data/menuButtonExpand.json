@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "description": "Expand menu button to a larger size when clicked",
+  "viewBox": "0 0 200 300",
+  "width": 200,
+  "height": 300,
+  "modifyPosition": {
+    "x": 0,
+    "y": 0
+  },
+  "variables": [
+    {"smooth": "(1/(1+(0.5*sin(n*PI*2+PI/2)+0.5)))*(sin(PI*n-(PI/2))+0.5)"}
+  ],
+  "animations": {
+    "duration": 1,
+    "loops": 1,
+    "controlPointAnimations": {
+      "sq-1": {
+        "formula": {
+          "x": {
+            "expression": "50 - 55 * |var:smooth|"
+          },
+          "y": {
+            "expression": "100 - 105 * |var:smooth|"
+          }
+        }
+      },
+      "sq-2": {
+        "formula": {
+          "x": {
+            "expression": "125 + 60 * |var:smooth|"
+          },
+          "y": {
+            "expression": "120 - 105 * |var:smooth|"
+          }
+        }
+      },
+      "sq-3": {
+        "formula": {
+          "x": {
+            "expression": "125 + 60 * |var:smooth|"
+          },
+          "y": {
+            "expression": "175 + 105 * |var:smooth|"
+          }
+        }
+      },
+      "sq-4": {
+        "formula": {
+          "x": {
+            "expression": "70 - 55 * |var:smooth|"
+          },
+          "y": {
+            "expression": "175 + 105 * |var:smooth|"
+          }
+        }
+      }
+    },
+    "styleAnimations": {
+      "fill": "rgba(255, 255, 255, ${0.9 * |var:smooth|})"
+    }
+  },
+  "fillPath": true,
+  "closePath": true,
+  "style": {
+    "fill": "rgba(100, 180, 255, 0.1)",
+    "stroke": "white",
+    "strokeWidth": 0
+  }
+}
