@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "description": "Wind effect for the player shape",
+  "modifyPosition": {
+    "x": 0,
+    "y": 0
+  },
+  "modifyControlPoints": {
+    "left-point": {
+      "xOffset": 5,
+      "yOffset": 0
+    },
+    "right-point": {
+      "xOffset": -5,
+      "yOffset": 0
+    }
+  },
+  "animations": {
+    "duration": 5,
+    "loops": 0,
+    "controlPointAnimations": {
+      "left-point": {
+        "formula": {
+          "x": {
+            "expression": "15 + 15 * sin(TWO_PI * 0.8 * n)"
+          }
+        }
+      },
+      "right-point": {
+        "formula": {
+          "x": {
+            "expression": "185 + 10 * sin(TWO_PI * n + 3.14)"
+          }
+        }
+      },
+      "top-point": {
+        "formula": {
+          "y": {
+            "expression": "10 + 8 * sin(TWO_PI * 1.2 * n + 1.5)"
+          }
+        }
+      }
+    }
+  },
+  "styleChanges": {
+    "top-left-curve": {
+      "stroke": "#ff9800",
+      "strokeWidth": 3
+    }
+  }
+}

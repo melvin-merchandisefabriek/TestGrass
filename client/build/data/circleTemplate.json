@@ -1,0 +1,68 @@
+{
+  "id": "full-circle",
+  "name": "Full Circle Shape",
+  "width": 200,
+  "height": 200,
+  "displayOptions": {
+    "showControlPoints": false,
+    "showAnchorPoints": false,
+    "showPositionAnchor": false,
+    "showBorder": false
+  },
+  "position": {
+    "svg": { "x": 0, "y": 0 },
+    "global": { "x": 400, "y": 300 }
+  },
+  "controlPoints": [
+    { "id": "left-point", "x": 10, "y": 100, "type": "anchor" },
+    { "id": "top-point", "x": 100, "y": 10, "type": "anchor" },
+    { "id": "right-point", "x": 190, "y": 100, "type": "anchor" },
+    { "id": "bottom-point", "x": 100, "y": 190, "type": "anchor" },
+    
+    { "id": "top-left-control1", "x": 10, "y": 50, "type": "control" },
+    { "id": "top-left-control2", "x": 50, "y": 10, "type": "control" },
+    
+    { "id": "top-right-control1", "x": 150, "y": 10, "type": "control" },
+    { "id": "top-right-control2", "x": 190, "y": 50, "type": "control" },
+    
+    { "id": "bottom-right-control1", "x": 190, "y": 150, "type": "control" },
+    { "id": "bottom-right-control2", "x": 150, "y": 190, "type": "control" },
+    
+    { "id": "bottom-left-control1", "x": 50, "y": 190, "type": "control" },
+    { "id": "bottom-left-control2", "x": 10, "y": 150, "type": "control" }
+  ],
+  "segments": [
+    {
+      "id": "top-left-curve",
+      "type": "bezier",
+      "points": ["left-point", "top-left-control1", "top-left-control2", "top-point"],
+      "style": { "stroke": "#4fc3f7", "strokeWidth": 2 }
+    },
+    {
+      "id": "top-right-curve",
+      "type": "bezier",
+      "points": ["top-point", "top-right-control1", "top-right-control2", "right-point"],
+      "style": { "stroke": "#00bcd4", "strokeWidth": 2 }
+    },
+    {
+      "id": "bottom-right-curve",
+      "type": "bezier",
+      "points": ["right-point", "bottom-right-control1", "bottom-right-control2", "bottom-point"],
+      "style": { "stroke": "#009688", "strokeWidth": 2 }
+    },
+    {
+      "id": "bottom-left-curve",
+      "type": "bezier",
+      "points": ["bottom-point", "bottom-left-control1", "bottom-left-control2", "left-point"],
+      "style": { "stroke": "#4caf50", "strokeWidth": 2 }
+    }
+  ],
+  "fillPath": false,
+  "closePath": false,
+  "style": {
+    "fill": "none",
+    "stroke": "#4fc3f7",
+    "strokeWidth": 2
+  },
+  "filePath": "/data/halfCircle.json"
+}
