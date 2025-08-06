@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import UI from './components/UI';
+import SharedAnimatedTrianglesConfigEditor from './components/SharedAnimatedTrianglesConfigEditor';
 import Environment from './components/Environment';
 import Player from './components/Player';
 import Shape from './components/Shape';
@@ -25,8 +26,27 @@ function App() {
     //   .then(data => setMessage(data.message));
   }, []);
 
+  // Display JS errors as a red banner at the top of the page
+  useEffect(() => {
+    window.onerror = function(message, source, lineno, colno, error) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'fixed';
+      errorDiv.style.top = '0';
+      errorDiv.style.left = '0';
+      errorDiv.style.width = '100vw';
+      errorDiv.style.background = 'rgba(255,0,0,0.9)';
+      errorDiv.style.color = 'white';
+      errorDiv.style.zIndex = '9999';
+      errorDiv.style.padding = '1em';
+      errorDiv.style.fontSize = '1em';
+      errorDiv.innerText = `Error: ${message}\n${error && error.stack ? error.stack : ''}`;
+      document.body.appendChild(errorDiv);
+    };
+  }, []);
+
   return (
     <div className="App">
+        <SharedAnimatedTrianglesConfigEditor />
         <SharedAnimatedTriangles />
         {/* <AnimatedWebGLTriangle /> */}
         {/* <SimpleWebGLTriangle /> */}
