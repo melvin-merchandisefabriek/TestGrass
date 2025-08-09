@@ -42,7 +42,7 @@ const UnifiedSceneSVG = () => {
     <>
       <AddShapeForm onAdded={(entry) => setShapes(prev => [...prev, entry])} />
       {/* Simple list of dynamic shapes with remove buttons */}
-      <div style={{ position: 'fixed', top: 10, right: 10, background: '#111', color: '#eee', padding: 8, fontSize: 12, border: '1px solid #444', maxHeight: '50vh', overflowY: 'auto' }}>
+      <div style={{ position: 'fixed', top: 10, right: 10, zIndex: 1, background: '#111', color: '#eee', padding: 8, fontSize: 12, border: '1px solid #444', maxHeight: '50vh', overflowY: 'auto' }}>
         <div style={{ fontWeight: 'bold', marginBottom: 4 }}>Shapes</div>
         {shapes.length === 0 && <div style={{ opacity: 0.6 }}>None</div>}
         {shapes.map(s => (
@@ -86,10 +86,10 @@ const UnifiedSceneSVG = () => {
           />
         ))}
         {/* Debug squares at the four corners of the SVG */}
-        <rect x={0} y={0} width={40} height={40} fill="red" />
-        <rect x={width-40} y={0} width={40} height={40} fill="green" />
-        <rect x={0} y={height-40} width={40} height={40} fill="blue" />
-        <rect x={width-40} y={height-40} width={40} height={40} fill="yellow" />
+        <rect x={0} y={0} width={20} height={20} fill="transparent" stroke="white" strokeWidth={2} />
+        <rect x={width-20} y={0} width={20} height={20} fill="transparent" stroke="white" strokeWidth={2} />
+        <rect x={0} y={height-20} width={20} height={20} fill="transparent" stroke="white" strokeWidth={2} />
+        <rect x={width-20} y={height-20} width={20} height={20} fill="transparent" stroke="white" strokeWidth={2} />
         {/* All other shapes/paths will go here in later steps */}
       </svg>
     </>

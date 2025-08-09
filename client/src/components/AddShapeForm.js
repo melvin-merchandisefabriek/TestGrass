@@ -49,7 +49,7 @@ const AddShapeForm = ({ onAdded }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ position: 'fixed', top: 10, left: 10, background: '#111', padding: '8px 12px', border: '1px solid #444', borderRadius: 4, color: '#eee', fontSize: 12, width: 260, maxHeight: '80vh', overflowY: 'auto' }}>
+    <form onSubmit={handleSubmit} style={{ position: 'fixed', top: 10, left: 10, zIndex: 1, background: '#111', padding: '8px 12px', border: '1px solid #444', borderRadius: 4, color: '#eee', fontSize: 12, width: 260, maxHeight: '80vh', overflowY: 'auto' }}>
       <div style={{ marginBottom: 4, fontWeight: 'bold' }}>Add Shape</div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 4 }}>
         <label style={{ cursor: 'pointer' }}>
