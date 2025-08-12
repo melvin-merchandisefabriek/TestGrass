@@ -35,7 +35,7 @@ const UnifiedSceneSVG = () => {
   const viewBox = `0 0 ${width} ${height}`;
 
   // Get animated grass blade data from TriangleArray.js, pass width for spacing
-  const blades = getGrassBladeData(150, width, height);
+  const blades = getGrassBladeData(10, width, height);
   console.log('unc - width:', width);
 
   return (
