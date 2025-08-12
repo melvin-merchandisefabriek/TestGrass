@@ -3,6 +3,8 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
+const { isValidConfig, writeConfigToFile } = require('./allowWriteToSharedAnimatedTriangles');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
