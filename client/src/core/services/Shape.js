@@ -6,8 +6,8 @@ import {
   deepEquals,
   updateAffectedSegments,
   loadShapeData
-} from '../utils/shape';
-import { mergeDisplayOptions } from '../utils/shape/displayUtils';
+} from '../../shared/utils';
+import { mergeDisplayOptions } from '../../shared/utils/displayUtils';
 
 // Default simple shape data for fallback
 const defaultShapeData = {
@@ -76,7 +76,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
       // Dynamically import to avoid circular dependencies
       const applyModifications = async () => {
         try {
-          const { applyShapeModifications } = await import('../utils/shape/modificationUtils');
+          const { applyShapeModifications } = await import('../../shared/utils/modificationUtils');
           
           // Always reload the base shape to ensure we start fresh
           const baseShape = await loadShapeData(filePath);
@@ -95,7 +95,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
       // Fall back to using current shapeData if no filePath is provided
       const applyModifications = async () => {
         try {
-          const { applyShapeModifications } = await import('../utils/shape/modificationUtils');
+          const { applyShapeModifications } = await import('../../shared/utils/modificationUtils');
           
           // Apply the modifications to the current shape data
           const modifiedData = applyShapeModifications(shapeData, shapeModifications);
@@ -127,7 +127,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
           if (modificationsPath) {
             try {
               // Import dynamically to avoid circular dependencies
-              const { loadModifications, applyShapeModifications } = await import('../utils/shape/modificationUtils');
+              const { loadModifications, applyShapeModifications } = await import('../../shared/utils/modificationUtils');
               
               // Load the modifications file
               const modifications = await loadModifications(modificationsPath);
@@ -390,7 +390,7 @@ const Shape = ({ filePath, modificationsPath, shapeData: providedShapeData, shap
     
     // Process style animations if present
     if (shapeData.animations?.styleAnimations) {
-      const { calculateStyleProperties } = require('../utils/shape/animationUtils');
+      const { calculateStyleProperties } = require('../../shared/utils/animationUtils');
       const newAnimatedStyle = calculateStyleProperties(
         shapeData.animations.styleAnimations,
         currentTime,

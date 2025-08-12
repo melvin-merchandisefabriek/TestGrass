@@ -24,16 +24,33 @@ This is a new TestGrass application with a Docker setup that includes:
 
 ```
 TestGrass/
-├── client/                # React frontend application
-│   ├── public/            # Static assets
-│   ├── src/               # React source code
-│   └── Dockerfile         # Client container setup
-├── server/                # Express.js backend server
-│   ├── index.js           # Server entry point
-│   └── Dockerfile         # Server container setup
-├── legacy/                # Previous project files for reference
-├── docker-compose.yml     # Docker compose configuration
-└── package.json           # Root project configuration
+├── client/                      # React frontend application
+│   ├── public/                  # Static assets
+│   ├── src/                     # React source code
+│   │   ├── webgl/              # WebGL-related components and utilities
+│   │   │   ├── components/     # WebGL React components
+│   │   │   ├── utils/          # WebGL utility functions
+│   │   │   └── examples/       # WebGL examples
+│   │   ├── svg/                # SVG-related components and utilities
+│   │   │   ├── components/     # SVG React components
+│   │   │   ├── utils/          # SVG utility functions
+│   │   │   └── examples/       # SVG examples
+│   │   ├── shared/             # Shared code between WebGL and SVG
+│   │   │   ├── utils/          # Common utility functions
+│   │   │   ├── models/         # Shared data models
+│   │   │   └── constants/      # Shared constants
+│   │   ├── core/               # Core application logic
+│   │   │   ├── services/       # Business logic services
+│   │   │   └── helpers/        # Helper functions
+│   │   ├── assets/             # Static assets (images, fonts, styles, data)
+│   │   └── docs/               # Documentation
+│   └── Dockerfile              # Client container setup
+├── server/                      # Express.js backend server
+│   ├── index.js                # Server entry point
+│   └── Dockerfile              # Server container setup
+├── legacy/                      # Previous project files for reference
+├── docker-compose.yml           # Docker compose configuration
+└── package.json                 # Root project configuration
 ```
 
 ## Development

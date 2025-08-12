@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import Shape from './Shape';
-import { getGrassBladeData } from './TriangleArray';
-import AddShapeForm from './AddShapeForm';
+import Shape from '../../core/services/Shape';
+import { getGrassBladeData } from '../../core/services/TriangleArray';
+import AddShapeForm from '../../core/services/AddShapeForm';
 
 const trianglePath = process.env.PUBLIC_URL + '/data/triangleShape.json';
 

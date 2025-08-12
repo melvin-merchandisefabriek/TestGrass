@@ -1,5 +1,5 @@
 import React from 'react';
-import MultiBezierWebGL from './MultiBezierWebGL';
+import MultiBezierWebGL from '../../webgl/components/MultiBezierWebGL';
 
 function randomControlPoints() {
   // Each point in [-1, 1] x [-1, 1] (NDC)

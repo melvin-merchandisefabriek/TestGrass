@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import bladeConfig from '../bladeConfig.json';
+import bladeConfig from '../../assets/bladeConfig.json';
 
 // Quadratic Bezier helper
 function quadBezier(t, p0, p1, p2) {

@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import './App.css';
-import UI from './components/UI';
-import SharedAnimatedTrianglesConfigEditor from './components/SharedAnimatedTrianglesConfigEditor';
-import Environment from './components/Environment';
-import Player from './components/Player';
-import Shape from './components/Shape';
-import UnifiedSceneSVG from './components/UnifiedSceneSVG';
-import MinimalDot from './components/MinimalDot';
-import GrassBladeWebGLDemo from './components/GrassBladeWebGLDemo';
-import ShapeWebGLDemo from './components/ShapeWebGLDemo';
-import GrassFieldWebGL from './components/GrassFieldWebGL';
-import BladeGPUAnimated from './components/BladeGPUAnimated';
-import SimpleWebGLTriangle from './components/SimpleWebGLTriangle';
-import AnimatedWebGLTriangle from './components/AnimatedWebGLTriangle';
-import SharedAnimatedTriangles from './components/SharedAnimatedTriangles';
-import BezierShapeDemo from './BezierShapeDemo';
+import './assets/styles/App.css';
+import UI from './core/services/UI';
+import SharedAnimatedTrianglesConfigEditor from './core/services/SharedAnimatedTrianglesConfigEditor';
+import Environment from './core/services/Environment';
+import Player from './core/services/Player';
+import Shape from './core/services/Shape';
+import UnifiedSceneSVG from './svg/components/UnifiedSceneSVG';
+import MinimalDot from './core/services/MinimalDot';
+import GrassBladeWebGLDemo from './webgl/components/GrassBladeWebGLDemo';
+import ShapeWebGLDemo from './webgl/components/ShapeWebGLDemo';
+import GrassFieldWebGL from './webgl/components/GrassFieldWebGL';
+import BladeGPUAnimated from './webgl/components/BladeGPUAnimated';
+import SimpleWebGLTriangle from './webgl/components/SimpleWebGLTriangle';
+import AnimatedWebGLTriangle from './webgl/components/AnimatedWebGLTriangle';
+import SharedAnimatedTriangles from './core/services/SharedAnimatedTriangles';
+import BezierShapeDemo from './webgl/examples/BezierShapeDemo';
 
 function App() {
   const [message, setMessage] = useState('Hello World!');
