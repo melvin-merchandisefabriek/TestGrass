@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { earclip } from '../utils/earclip';
+import { earclip } from '../../shared/utils/earclip';
 
 // --- Expression compiler for config-driven math ---
 const safeMath = {

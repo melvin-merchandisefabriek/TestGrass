@@ -1,5 +1,5 @@
 import React from 'react';
-import BezierShapeWebGL from './components/BezierShapeWebGL';
+import BezierShapeWebGL from '../components/BezierShapeWebGL';
 
 // Example: an 8-sided closed shape using quadratic Beziers
 const shape = [
