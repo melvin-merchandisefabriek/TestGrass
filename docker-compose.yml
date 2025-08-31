@@ -3,27 +3,24 @@ version: '3'
 services:
   server:
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server.Dockerfile
     ports:
       - "3001:3001"
     volumes:
-      - ./server:/usr/src/app
-      - /usr/src/app/node_modules
+      # Persist dynamic shape data (JSON files added at runtime)
+      - ./server/data:/app/server/data
     environment:
-      - NODE_ENV=development
-    command: npm run dev
+      - NODE_ENV=production
 
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-    ports:
-      - "8443:443"
-    # volumes:
-    #   - ./client:/usr/src/app
-    #   - /usr/src/app/node_modules
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - server
+  # client service removed; server now serves static build. Uncomment to run standalone HTTPS static container.
+  # client:
+  #   build:
+  #     context: ./client
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8443:443"
+  #   environment:
+  #     - NODE_ENV=production
+  #   depends_on:
+  #     - server
