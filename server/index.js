@@ -3,7 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 
-const { isValidConfig, writeConfigToFile } = require('./allowWriteToSharedAnimatedTriangles');
+const { isValidConfig, writeConfigToFile, TARGET_PATH } = require('./allowWriteToSharedAnimatedTriangles');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -49,6 +49,34 @@ function isSafeFilename(name) {
 // API routes
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello World from the server!' });
+});
+
+// POST config for SharedAnimatedTriangles (write to source file for rebuild/dev usage)
+app.post('/api/shared-animated-triangles-config', (req, res) => {
+  try {
+    const cfg = req.body;
+    if (!isValidConfig(cfg)) {
+      return res.status(400).json({ error: 'Invalid config structure' });
+    }
+    writeConfigToFile(cfg);
+    return res.json({ status: 'ok' });
+  } catch (e) {
+    console.error('Failed to write shared animated triangles config', e);
+    return res.status(500).json({ error: 'Failed to persist config' });
+  }
+});
+
+app.get('/api/shared-animated-triangles-config', (req, res) => {
+  try {
+    if (!fs.existsSync(TARGET_PATH)) {
+      return res.status(404).json({ error: 'No config found' });
+    }
+    const raw = fs.readFileSync(TARGET_PATH, 'utf8');
+    return res.type('application/json').send(raw);
+  } catch (e) {
+    console.error('Failed to read shared animated triangles config', e);
+    return res.status(500).json({ error: 'Failed to read config' });
+  }
 });
 
 app.get('/api/shapes', (req, res) => {

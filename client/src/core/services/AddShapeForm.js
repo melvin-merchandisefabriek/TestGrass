@@ -34,17 +34,39 @@ const AddShapeForm = ({ onAdded }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     })
-      .then(r => r.json().then(data => ({ ok: r.ok, data })))
-      .then(({ ok, data }) => {
-        if (ok) {
+      .then(async (r) => {
+        let data = null;
+        let parseError = null;
+        try {
+          data = await r.json();
+        } catch (e) {
+          // Response might not be JSON (e.g. HTML error page, empty body)
+          parseError = e;
+        }
+        return { ok: r.ok, status: r.status, data, parseError, raw: data ? null : await r.text().catch(() => '') };
+      })
+      .then(({ ok, status, data, parseError, raw }) => {
+        if (ok && data) {
           setStatus('added');
           setId('');
           if (onAdded) onAdded(data);
-        } else {
-          setStatus(data.error || 'error');
+          return;
         }
+        if (parseError) {
+          console.error('Failed to parse response JSON', parseError, raw);
+          setStatus(`parse error (status ${status})`);
+          return;
+        }
+        if (data && data.error) {
+          setStatus(data.error);
+          return;
+        }
+        setStatus(`error (status ${status})`);
       })
-      .catch(() => setStatus('network error'))
+      .catch((err) => {
+        console.error('Network / fetch error posting shape', err);
+        setStatus('network error');
+      })
       .finally(() => setSubmitting(false));
   }
 

@@ -4,7 +4,10 @@
 const fs = require('fs');
 const path = require('path');
 
-const TARGET_PATH = path.join(__dirname, '../client/src/components/SharedAnimatedTrianglesDefs.js');
+// In the runtime container we only ship the built client, not client/src.
+// So persist dynamic triangle config as JSON under server/data where a volume is mounted.
+const DATA_DIR = path.join(__dirname, 'data');
+const TARGET_PATH = path.join(DATA_DIR, 'sharedAnimatedTrianglesConfig.json');
 
 function isValidConfig(obj) {
   // Basic validation: must have vertices, indices, colorExpr, positionExpr
@@ -16,11 +19,17 @@ function isValidConfig(obj) {
 }
 
 function writeConfigToFile(config) {
-  // Convert arrays to typed array code
-  const verticesStr = `new Float32Array([\n  ${config.vertices.join(', ')}\n])`;
-  const indicesStr = `new Uint16Array([\n  ${config.indices.join(', ')}\n])`;
-  const fileContent = `// SharedAnimatedTrianglesDefs.js\n// Definitions for vertices, color expressions, and position expressions for SharedAnimatedTriangles\n\nexport const sharedAnimatedTrianglesConfig = {\n  visible: true,\n  vertices: ${verticesStr},\n  indices: ${indicesStr},\n  colorExpr: \`${config.colorExpr}\`,\n  positionExpr: \`${config.positionExpr}\`\n};\n`;
-  fs.writeFileSync(TARGET_PATH, fileContent, 'utf8');
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  const payload = {
+    visible: true,
+    vertices: config.vertices,
+    indices: config.indices,
+    colorExpr: config.colorExpr,
+    positionExpr: config.positionExpr,
+    updatedAt: new Date().toISOString()
+  };
+  fs.writeFileSync(TARGET_PATH, JSON.stringify(payload, null, 2), 'utf8');
 }
 
-module.exports = { isValidConfig, writeConfigToFile };
+// Expose the path for potential future GET endpoint
+module.exports = { isValidConfig, writeConfigToFile, TARGET_PATH };

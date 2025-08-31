@@ -1,0 +1,39 @@
+{
+  "visible": true,
+  "vertices": [
+    0,
+    0.8,
+    1,
+    0,
+    -0.8,
+    0,
+    0,
+    1,
+    0.8,
+    0,
+    0,
+    1,
+    0,
+    -0.8,
+    1,
+    1,
+    0.8,
+    -0.8,
+    0,
+    1
+  ],
+  "indices": [
+    0,
+    1,
+    2,
+    3,
+    1,
+    2,
+    4,
+    2,
+    3
+  ],
+  "colorExpr": "float t = (vY + 0.8) / 1.6;\noutColor = mix(vec4(0.0, 0.05, 0.0, 1.0), vec4(0.0, 1.0, 0.0, 1.0), t);",
+  "positionExpr": "float t = (sin(time * 0.001 + triIndex * 1.5) + 1.0) * 0.5;\npos.x += t * pos.y;",
+  "updatedAt": "2025-08-31T18:42:45.951Z"
+}
